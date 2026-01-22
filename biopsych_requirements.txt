@@ -1,0 +1,34 @@
+Courses listed with these "columns": credits coursenum coursename
+
+Required courses
+5 BIO151 Introductory Biology I
+5 BIO152 Introductory Biology II
+5 BIO354 Cell Biology
+5 BIO475 Neurobiology
+5 CHM115 General Chemistry I
+5 CHM116 General Chemistry II
+4 PSY105 Principles of Psychology
+4 PSY215 Research Methods and Statistics I
+4 PSY315 Research Methods and Statistics II
+4 PSY355 Biopsychology
+
+Complete two (2) psychology electives from the following. 
+4 PSY253 Aging and Adulthood
+4 PSY262 Psychopathology
+4 PSY299 Directed Study (Research in Biopsychology)
+4 PSY325 Social Behavior
+4 PSY354 Cognitive Psychology
+4 PSY391 Individual Differences
+4 PSY410 Clinical Neuropsychology
+4 PSY491 Advanced Research Seminar
+
+Complete two (2) biology electives, chosen from the following:
+5 BIO355 Genetics
+5 BIO369 Biochemistry
+5 BIO473 Physiology of Humans and Other Animals
+5 BIO474 Developmental Biology
+5 PHY317 Biophysics
+
+Complete one (1) Keystone class 
+2 BIO490 Biology Keystone
+4 PSY400 Keystone Internship

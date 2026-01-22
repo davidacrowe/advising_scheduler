@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biology Major Course Planner - Augsburg University</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Biology Major Course Planner</h1>
+        <div class="header-controls">
+            <label for="audit-upload" class="upload-btn">Upload Degree Audit</label>
+            <input type="file" id="audit-upload" accept=".pdf" hidden>
+            <span id="student-name"></span>
+        </div>
+    </header>
+
+    <main>
+        <!-- Left Panel: Semester Grid -->
+        <section class="semester-panel">
+            <div class="semester-grid">
+                <!-- Year 1 -->
+                <div class="year-row" data-year="1">
+                    <div class="year-label">Year 1</div>
+                    <div class="semester fall" data-semester="fall-1">
+                        <div class="semester-label">Fall</div>
+                        <div class="course-slots">
+                            <div class="slot full" data-slot="0"></div>
+                            <div class="slot full" data-slot="1"></div>
+                            <div class="slot full" data-slot="2"></div>
+                            <div class="slot full" data-slot="3"></div>
+                        </div>
+                        <div class="one-credit-slots">
+                            <div class="slot one-credit" data-slot="4"></div>
+                            <div class="slot one-credit" data-slot="5"></div>
+                        </div>
+                    </div>
+                    <div class="semester spring" data-semester="spring-1">
+                        <div class="semester-label">Spring</div>
+                        <div class="course-slots">
+                            <div class="slot full" data-slot="0"></div>
+                            <div class="slot full" data-slot="1"></div>
+                            <div class="slot full" data-slot="2"></div>
+                            <div class="slot full" data-slot="3"></div>
+                        </div>
+                        <div class="one-credit-slots">
+                            <div class="slot one-credit" data-slot="4"></div>
+                            <div class="slot one-credit" data-slot="5"></div>
+                        </div>
+                    </div>
+                    <div class="semester summer" data-semester="summer-1">
+                        <div class="semester-label">Sum</div>
+                        <div class="summer-slots">
+                            <div class="slot summer-slot" data-slot="0"></div>
+                            <div class="slot summer-slot" data-slot="1"></div>
+                            <div class="slot summer-slot" data-slot="2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Year 2 -->
+                <div class="year-row" data-year="2">
+                    <div class="year-label">Year 2</div>
+                    <div class="semester fall" data-semester="fall-2">
+                        <div class="semester-label">Fall</div>
+                        <div class="course-slots">
+                            <div class="slot full" data-slot="0"></div>
+                            <div class="slot full" data-slot="1"></div>
+                            <div class="slot full" data-slot="2"></div>
+                            <div class="slot full" data-slot="3"></div>
+                        </div>
+                        <div class="one-credit-slots">
+                            <div class="slot one-credit" data-slot="4"></div>
+                            <div class="slot one-credit" data-slot="5"></div>
+                        </div>
+                    </div>
+                    <div class="semester spring" data-semester="spring-2">
+                        <div class="semester-label">Spring</div>
+                        <div class="course-slots">
+                            <div class="slot full" data-slot="0"></div>
+                            <div class="slot full" data-slot="1"></div>
+                            <div class="slot full" data-slot="2"></div>
+                            <div class="slot full" data-slot="3"></div>
+                        </div>
+                        <div class="one-credit-slots">
+                            <div class="slot one-credit" data-slot="4"></div>
+                            <div class="slot one-credit" data-slot="5"></div>
+                        </div>
+                    </div>
+                    <div class="semester summer" data-semester="summer-2">
+                        <div class="semester-label">Sum</div>
+                        <div class="summer-slots">
+                            <div class="slot summer-slot" data-slot="0"></div>
+                            <div class="slot summer-slot" data-slot="1"></div>
+                            <div class="slot summer-slot" data-slot="2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Year 3 -->
+                <div class="year-row" data-year="3">
+                    <div class="year-label">Year 3</div>
+                    <div class="semester fall" data-semester="fall-3">
+                        <div class="semester-label">Fall</div>
+                        <div class="course-slots">
+                            <div class="slot full" data-slot="0"></div>
+                            <div class="slot full" data-slot="1"></div>
+                            <div class="slot full" data-slot="2"></div>
+                            <div class="slot full" data-slot="3"></div>
+                        </div>
+                        <div class="one-credit-slots">
+                            <div class="slot one-credit" data-slot="4"></div>
+                            <div class="slot one-credit" data-slot="5"></div>
+                        </div>
+                    </div>
+                    <div class="semester spring" data-semester="spring-3">
+                        <div class="semester-label">Spring</div>
+                        <div class="course-slots">
+                            <div class="slot full" data-slot="0"></div>
+                            <div class="slot full" data-slot="1"></div>
+                            <div class="slot full" data-slot="2"></div>
+                            <div class="slot full" data-slot="3"></div>
+                        </div>
+                        <div class="one-credit-slots">
+                            <div class="slot one-credit" data-slot="4"></div>
+                            <div class="slot one-credit" data-slot="5"></div>
+                        </div>
+                    </div>
+                    <div class="semester summer" data-semester="summer-3">
+                        <div class="semester-label">Sum</div>
+                        <div class="summer-slots">
+                            <div class="slot summer-slot" data-slot="0"></div>
+                            <div class="slot summer-slot" data-slot="1"></div>
+                            <div class="slot summer-slot" data-slot="2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Year 4 -->
+                <div class="year-row" data-year="4">
+                    <div class="year-label">Year 4</div>
+                    <div class="semester fall" data-semester="fall-4">
+                        <div class="semester-label">Fall</div>
+                        <div class="course-slots">
+                            <div class="slot full" data-slot="0"></div>
+                            <div class="slot full" data-slot="1"></div>
+                            <div class="slot full" data-slot="2"></div>
+                            <div class="slot full" data-slot="3"></div>
+                        </div>
+                        <div class="one-credit-slots">
+                            <div class="slot one-credit" data-slot="4"></div>
+                            <div class="slot one-credit" data-slot="5"></div>
+                        </div>
+                    </div>
+                    <div class="semester spring" data-semester="spring-4">
+                        <div class="semester-label">Spring</div>
+                        <div class="course-slots">
+                            <div class="slot full" data-slot="0"></div>
+                            <div class="slot full" data-slot="1"></div>
+                            <div class="slot full" data-slot="2"></div>
+                            <div class="slot full" data-slot="3"></div>
+                        </div>
+                        <div class="one-credit-slots">
+                            <div class="slot one-credit" data-slot="4"></div>
+                            <div class="slot one-credit" data-slot="5"></div>
+                        </div>
+                    </div>
+                    <div class="semester summer" data-semester="summer-4">
+                        <div class="semester-label">Sum</div>
+                        <div class="summer-slots">
+                            <div class="slot summer-slot" data-slot="0"></div>
+                            <div class="slot summer-slot" data-slot="1"></div>
+                            <div class="slot summer-slot" data-slot="2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prior Transfer Section (for transfer courses before grid start) -->
+            <div class="prior-credits-section" id="prior-credits">
+                <h3>Prior Transfer <span class="toggle-icon">+</span></h3>
+                <div class="prior-credits-content hidden">
+                    <div class="prior-credits-list" id="prior-credits-list">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Panel: Requirements Sidebar -->
+        <aside class="requirements-panel">
+            <!-- Credit Summary -->
+            <section class="req-section credit-summary">
+                <h2>Credit Summary</h2>
+                <div class="req-item">
+                    <span class="req-status" id="total-credits-status">-</span>
+                    <span class="req-label">Total Credits:</span>
+                    <span class="req-value" id="total-credits">0/128</span>
+                </div>
+                <div class="req-item">
+                    <span class="req-status" id="ud-credits-status">-</span>
+                    <span class="req-label">Upper Division:</span>
+                    <span class="req-value" id="ud-credits">0/36</span>
+                </div>
+                <div class="req-item">
+                    <span class="req-status" id="plp-total-status">-</span>
+                    <span class="req-label">P/LP Total:</span>
+                    <span class="req-value" id="plp-total">0/24</span>
+                </div>
+                <div class="req-item">
+                    <span class="req-status" id="plp-major-status">-</span>
+                    <span class="req-label">P/LP Major:</span>
+                    <span class="req-value" id="plp-major">0/8</span>
+                </div>
+                <div class="req-item">
+                    <span class="req-status" id="augsburg-exp-status">-</span>
+                    <span class="req-label">Augsburg Experience</span>
+                </div>
+                <div class="req-item">
+                    <span class="req-status" id="intent-grad-status">-</span>
+                    <span class="req-label">Intent to Graduate</span>
+                </div>
+            </section>
+
+            <!-- Biology Major Requirements -->
+            <section class="req-section bio-major" id="bio-major-section">
+                <h2>Biology Major</h2>
+
+                <!-- Introductory Sequence -->
+                <div class="req-subsection">
+                    <h3>Introductory Sequence</h3>
+                    <div class="course-list" id="intro-courses">
+                        <!-- BIO151, BIO152 will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Sophomore Level -->
+                <div class="req-subsection">
+                    <h3>Sophomore Level</h3>
+                    <div class="course-list" id="sophomore-courses">
+                        <!-- BIO354, BIO355 will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Chemistry -->
+                <div class="req-subsection">
+                    <h3>Chemistry</h3>
+                    <div class="course-list" id="chemistry-courses">
+                        <!-- CHM115, CHM116, CHM251 will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Supporting Courses -->
+                <div class="req-subsection">
+                    <h3>Supporting Courses</h3>
+                    <div class="course-list" id="supporting-courses">
+                        <!-- MAT114, Math, Physics will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Upper Division Electives -->
+                <div class="req-subsection">
+                    <h3>Upper Division Electives</h3>
+                    <div class="req-counters">
+                        <span class="counter" id="ud-elective-count">0/5 UD Electives</span>
+                        <span class="counter" id="ud-lab-count">0/4 UD Labs</span>
+                        <span class="counter" id="plant-ecology-count">0/1 Plant/Ecology</span>
+                    </div>
+                    <p class="help-text">Courses marked with <span class="non-health-marker">&#9733;</span> fulfill the Plant/Ecology requirement</p>
+                    <div class="course-list" id="ud-elective-courses">
+                        <!-- UD electives will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Keystone -->
+                <div class="req-subsection">
+                    <h3>Keystone</h3>
+                    <div class="course-list" id="keystone-course">
+                        <!-- BIO490 will be populated here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Biopsychology Major Requirements -->
+            <section class="req-section biopsych-major hidden" id="biopsych-major-section">
+                <h2>Biopsychology Major</h2>
+
+                <!-- Required Courses -->
+                <div class="req-subsection">
+                    <h3>Required Courses</h3>
+                    <div class="course-list" id="biopsych-required-courses">
+                        <!-- BIO151, BIO152, BIO354, BIO475, CHM115, CHM116, PSY105, PSY215, PSY315, PSY355 -->
+                    </div>
+                </div>
+
+                <!-- Biology Electives -->
+                <div class="req-subsection">
+                    <h3>Biology Electives</h3>
+                    <div class="req-counters">
+                        <span class="counter" id="biopsych-bio-elective-count">0/2 Bio Electives</span>
+                    </div>
+                    <div class="course-list" id="biopsych-bio-electives">
+                        <!-- BIO355, BIO369, BIO473, BIO474, PHY317 -->
+                    </div>
+                </div>
+
+                <!-- Psychology Electives -->
+                <div class="req-subsection">
+                    <h3>Psychology Electives</h3>
+                    <div class="req-counters">
+                        <span class="counter" id="biopsych-psych-elective-count">0/2 Psych Electives</span>
+                    </div>
+                    <div class="course-list" id="biopsych-psych-electives">
+                        <!-- PSY253, PSY262, PSY299, PSY325, PSY354, PSY391, PSY410, PSY491 -->
+                    </div>
+                </div>
+
+                <!-- Keystone -->
+                <div class="req-subsection">
+                    <h3>Keystone</h3>
+                    <div class="req-counters">
+                        <span class="counter" id="biopsych-keystone-count">0/1 Keystone</span>
+                    </div>
+                    <div class="course-list" id="biopsych-keystone-course">
+                        <!-- BIO490 or PSY400 -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- General Education (New Rules - 2025+) -->
+            <section class="req-section gen-ed gen-ed-new" id="gened-new-section">
+                <h2>General Education</h2>
+                <div class="gened-list" id="gened-courses">
+                    <!-- Gen Ed courses will be populated here with status indicators -->
+                </div>
+            </section>
+
+            <!-- General Education (Old Rules - Pre-2025) -->
+            <section class="req-section gen-ed gen-ed-old hidden" id="gened-old-section">
+                <h2>General Education (Old Rules)</h2>
+                <div class="gened-list" id="old-gened-courses">
+                    <!-- Old Gen Ed courses will be populated here -->
+                </div>
+            </section>
+
+            <!-- Minor Courses -->
+            <section class="req-section minor-courses">
+                <h2>Minor Courses <span id="minor-name" class="minor-name-label"></span></h2>
+                <p class="help-text">Use these to track minor requirements</p>
+                <div class="course-list" id="minor-courses">
+                    <!-- Minor course placeholders will be populated here -->
+                </div>
+            </section>
+
+            <!-- Generic Courses -->
+            <section class="req-section generic-courses">
+                <h2>Generic Courses</h2>
+                <p class="help-text">Drag to grid, then double-click to customize</p>
+                <div class="course-list" id="generic-courses">
+                    <!-- Generic 4, 2, 1 credit courses will be populated here -->
+                </div>
+            </section>
+        </aside>
+    </main>
+
+    <!-- Course Customization Modal -->
+    <div id="course-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Customize Course</h3>
+            <form id="course-form">
+                <div class="form-group">
+                    <label for="course-name">Course Name/ID:</label>
+                    <input type="text" id="course-name" placeholder="e.g., SOC121 or Study Abroad" required>
+                </div>
+                <div class="form-group">
+                    <label for="course-credits">Credits:</label>
+                    <select id="course-credits">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4" selected>4</option>
+                        <option value="5">5</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="course-type">Type:</label>
+                    <select id="course-type">
+                        <option value="elective">Free Elective</option>
+                        <option value="major">Major Elective</option>
+                        <option value="minor">Minor Course</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="modal-cancel" class="btn-cancel">Cancel</button>
+                    <button type="submit" class="btn-save">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="courses.js"></script>
+    <script src="requirements.js"></script>
+    <script src="auditParser.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

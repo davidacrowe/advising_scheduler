@@ -1,0 +1,65 @@
+PSY105 Principles of Psychology
+4 Semester Credits
+Nickname: Intro Psych
+Prerequisite(s): None
+
+PSY215 Research Methods and Statistics I
+4 Semester Credits
+Nickname: Methods I
+Prerequisite(s): 1 of MAT105(Applied Algebra), MAT106(Applied Algebra and Trigonometry), MPL(Math Placement Level 3); PSY105(Principles of Psychology)
+
+PSY253 Aging and Adulthood
+4 Semester Credits
+Nickname: Aging and Adulthood
+Prerequisite(s): PSY105(Principles of Psychology)
+
+PSY262 Psychopathology
+4 Semester Credits
+Nickname: Psychopathology
+Prerequisite(s): PSY105(Principles of Psychology)
+
+PSY315 Research Methods and Statistics II
+4 Semester Credits
+Nickname: Methods II
+Prerequisite(s): 1 of ENL111(Effective Writing II), ENL112(Advanced Effective Writing), HON111(Effective Writing for Liberating Letters), WPL(Writing Placement Level); PSY215(Research Methods and Statistics I)
+
+PSY325 Social Behavior
+4 Semester Credits
+Nickname: Social
+Prerequisite(s): PSY215(Research Methods and Statistics I)
+
+PSY354 Cognitive Psychology
+4 Semester Credits
+Nickname: Cognitive
+Prerequisite(s): PSY215(Research Methods and Statistics I)
+
+PSY355 Biopsychology
+4 Semester Credits
+Nickname: Biopsych
+Prerequisite(s): PSY215(Research Methods and Statistics I)
+
+PSY391 Individual Differences
+4 Semester Credits
+Nickname: Ind. Diff.
+Prerequisite(s): PSY215(Research Methods and Statistics I)
+
+PSY396
+Internship
+4 Semester Credits
+Core Curriculum Component: None
+Prerequisite(s): 1 of ENL111(Effective Writing II), ENL112(Advanced Effective Writing), HON111(Effective Writing for Liberating Letters), WPL(Writing Placement Level); PSY315(Research Methods and Statistics II)
+
+PSY410 Clinical Neuropsychology
+4 Semester Credits
+Nickname: Neuropsych
+Prerequisite(s): PSY315(Research Methods and Statistics II)
+
+PSY400 Keystone Internship
+4 Semester Credits
+Nickname: Psych Keystone
+Prerequisite(s): PSY315(Research Methods and Statistics II)
+
+PSY491 Advanced Research Seminar
+4 Semester Credits
+Nickname: Adv. Research
+Prerequisite(s): 1 of ENL111(Effective Writing II), ENL112(Advanced Effective Writing), HON111(Effective Writing for Liberating Letters), WPL(Writing Placement Level); CONSENT(Consent of Instructor), PSY315(Research Methods and Statistics II)

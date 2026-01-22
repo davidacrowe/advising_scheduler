@@ -1,0 +1,21 @@
+# Editor swap/backup files
+*.swp
+*.swo
+*.un~
+*~
+
+# PDF files (student audit data - keep private)
+*.pdf
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local notes and development files
+notes.txt
+initial prompt.txt
+old_audit_extracted_text.txt
+sample_audit_old.txt
+
+# Claude Code local state
+.claude/
