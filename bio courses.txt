@@ -2,104 +2,124 @@ BIO151 Introductory Biology I
 5 Semester Credits
 Nickname: Intro Bio I
 Prerequisite(s): 1 of MAT105(Applied Algebra), MAT106(Applied Algebra and Trigonometry), MPL(Math Placement Level 3)
-
+Offered: FS
 
 BIO152 Introductory Biology II
 5 Semester Credits
 Nickname: Intro Bio II
 Prerequisite(s): 1 of MAT105(Applied Algebra), MAT106(Applied Algebra and Trigonometry), MPL(Math Placement Level 3)
+Offered: FS
 
 BIO320 Human Anatomy
 5 Semester Credits
 Nickname: Anatomy
 Prerequisite(s): 1 of BIO253(Introductory Cellular Biology), BIO354(Introductory Cellular Biology); BIO151(Introductory Biology), BIO152(Evolution, Ecology and Diversity)
+Offered: S
 
 BIO354 Cell Biology
 5 Semester Credits
 Nickname: Cell
 Prerequisite(s): BIO151(Introductory Biology), CHM116(General Chemistry II)
+Offered: FS
 
 BIO355 Genetics
 5 Semester Credits
 Nickname: Genetics
 Prerequisite(s): BIO151(Introductory Biology I), BIO152(Introductory Biology II), CHM116(General Chemistry II)
+Offered: FS
 
 BIO361 Plant Biology
 5 Semester Credits
 Nickname: Plant
 Prerequisite(s): BIO151(Introductory Biology), BIO152(Evolution, Ecology and Diversity)
+Offered: S (odd)
 
 BIO369 Biochemistry
 5 Semester Credits
 Nickname: Biochem
 Prerequisite(s): 1 of DST164(Introduction to Statistics (with R)), MAT114(Precalculus), MAT145(Calculus I), MAT163(Introductory Statistics), PSY215(Research Methods and Statistics I); BIO354(Cell Biology), CHM251(Organic Chemistry I), CHM251L(Organic Chemistry I Lab)
+Offered: FS
 
 BIO370 Biochemistry II
 4 Semester Credits
 Nickname: Biochem II
 Prerequisite(s): 1 of BIO369(Biochemistry), CHM369(Biochemistry)
+Offered: S
 
 BIO420 Conservation Biology
 4 Semester Credits
 Nickname: Conservation
 Prerequisite(s): 1 of BIO255(Genetics), BIO355(Genetics), ENV320(Environmental Science); BIO152(Evolution, Ecology and Diversity)
+Offered: S
 
 BIO444 Genomics and Biotechnology
 5 Semester Credits
 Nickname: Genomics
 Prerequisite(s): BIO355(Genetics)
+Offered: S (even)
 
 BIO473 Physiology of Humans and Other Animals
 5 Semester Credits
 Nickname: Physiology
 Prerequisite(s): 1 of DST164(Introduction to Statistics (with R)), MAT114(Precalculus), MAT145(Calculus I), MAT163(Introductory Statistics), PSY215(Research Methods and Statistics I); BIO354(Cell Biology)
+Offered: F
 
 BIO474 Developmental Biology
 5 Semester Credits
 Nickname: Developmental
 Prerequisite(s): BIO354(Cell Biology), BIO355(Genetics)
+Offered: S (even)
 
 BIO475 Neurobiology
 5 Semester Credits
 Nickname: Neuro
 Prerequisite(s): BIO354(Cell Biology)
+Offered: S
 
 BIO476 Microbiology
 5 Semester Credits
 Nickname: Micro
 Prerequisite(s): BIO354(Cell Biology), BIO355(Genetics)
+Offered: F
 
 BIO481 Ecology
 5 Semester Credits
 Nickname: Ecology
 Prerequisite(s): 1 of DST164(Introduction to Statistics (with R)), MAT114(Precalculus), MAT145(Calculus I), MAT163(Introductory Statistics), MAT164(Introductory Statistics for STEM), PSY215(Research Methods and Statistics I); BIO151(Introductory Biology), BIO152(Evolution, Ecology and Diversity), CHM116(General Chemistry II)
+Offered: S
 
 BIO485 Advanced Topics in Biology
 2 Semester Credits
 Nickname: Topics
 Prerequisite(s): 1 of BIO253(Introductory Cellular Biology), BIO354(Introductory Cellular Biology); 1 of BIO255(Genetics), BIO355(Genetics); BIO151(Introductory Biology), BIO152(Evolution, Ecology and Diversity)
+Offered: FS
 
 BIO486 Immunology
 4 Semester Credits
 Nickname: Immunology
 Prerequisite(s): BIO354(Cell Biology), BIO355(Genetics)
+Offered: S
 
 BIO490 Biology Keystone
 2 Semester Credits
 Nickname: Keystone
 Prerequisite(s): 1 of BIO253(Introductory Cellular Biology), BIO354(Introductory Cellular Biology); 1 of BIO255(Genetics), BIO355(Genetics), BIO369(Biochemistry), CHM369(Biochemistry)
+Offered: FS
 
 CHM115 General Chemistry I
 5 Semester Credits
 Nickname: Gen Chem I
 Prerequisite(s): 1 of MAT105(Applied Algebra), MAT106(Applied Algebra and Trigonometry), MPL(Math Placement Level 3)
+Offered: FS
 
 CHM116 General Chemistry II
 5 Semester Credits
 Nickname: Gen Chem II
 Prerequisite(s): 1 of CHM115L(General Chemistry I Lab), CHM115L(General Chemistry I Lab); CHM115(General Chemistry I)
+Offered: FS
 
 CHM251 Organic Chemistry I
 5 Semester Credits
 Nickname: Organic
 Prerequisite(s): 1 of CHM116L(General Chemistry II Lab), CHM116L(General Chemistry II Lab); CHM116(General Chemistry II)
+Offered: F

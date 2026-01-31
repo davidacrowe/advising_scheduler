@@ -332,6 +332,49 @@ const MATH_PHYSICS_COURSES = [
         isPlaceholder: true,
         validCourses: ['MAT145', 'MAT163', 'DST164', 'PSY215']
     },
+    // Actual math/stats courses (for grid placement - hidden from sidebar)
+    {
+        id: 'MAT145',
+        name: 'Calculus I',
+        nickname: 'Calc I',
+        credits: 4,
+        hasLab: false,
+        isUpperDivision: false,
+        category: 'mathPhysics',
+        color: COLORS.mathPhysics,
+        prerequisites: ['MAT114'],
+        prereqType: 'and',
+        fulfills: 'mathStats',
+        hideFromSidebar: true
+    },
+    {
+        id: 'MAT163',
+        name: 'Intro to Statistics',
+        nickname: 'Stats',
+        credits: 4,
+        hasLab: false,
+        isUpperDivision: false,
+        category: 'mathPhysics',
+        color: COLORS.mathPhysics,
+        prerequisites: [],
+        prereqType: 'none',
+        fulfills: 'mathStats',
+        hideFromSidebar: true
+    },
+    {
+        id: 'DST164',
+        name: 'Introduction to Data Science',
+        nickname: 'Data Sci',
+        credits: 4,
+        hasLab: false,
+        isUpperDivision: false,
+        category: 'mathPhysics',
+        color: COLORS.mathPhysics,
+        prerequisites: [],
+        prereqType: 'none',
+        fulfills: 'mathStats',
+        hideFromSidebar: true
+    },
     {
         id: 'PHYSICS',
         name: 'Physics Requirement',
@@ -346,6 +389,49 @@ const MATH_PHYSICS_COURSES = [
         fulfills: 'physics',
         isPlaceholder: true,
         validCourses: ['PHY107', 'PHY116', 'PHY121']
+    },
+    // Actual physics courses (for grid placement - hidden from sidebar)
+    {
+        id: 'PHY107',
+        name: 'College Physics I',
+        nickname: 'Physics I',
+        credits: 5,
+        hasLab: true,
+        isUpperDivision: false,
+        category: 'mathPhysics',
+        color: COLORS.mathPhysics,
+        prerequisites: ['MAT114'],
+        prereqType: 'and',
+        fulfills: 'physics',
+        hideFromSidebar: true
+    },
+    {
+        id: 'PHY116',
+        name: 'General Physics I',
+        nickname: 'Gen Phys I',
+        credits: 5,
+        hasLab: true,
+        isUpperDivision: false,
+        category: 'mathPhysics',
+        color: COLORS.mathPhysics,
+        prerequisites: ['MAT145'],
+        prereqType: 'and',
+        fulfills: 'physics',
+        hideFromSidebar: true
+    },
+    {
+        id: 'PHY121',
+        name: 'Principles of Physics I',
+        nickname: 'Princ Phys',
+        credits: 5,
+        hasLab: true,
+        isUpperDivision: false,
+        category: 'mathPhysics',
+        color: COLORS.mathPhysics,
+        prerequisites: ['MAT145'],
+        prereqType: 'and',
+        fulfills: 'physics',
+        hideFromSidebar: true
     },
     {
         id: 'PHY317',

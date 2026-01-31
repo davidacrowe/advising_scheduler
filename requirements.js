@@ -79,6 +79,7 @@ let requirementsState = {
     // Special flags
     augsburgExperience: false,
     intentToGraduate: false,
+    hasMPG4: false,           // True if student achieved MPG4 on math placement test
 
     // Courses placed/completed
     completedCourses: new Map(), // courseId -> {semester, grade, credits, isCompleted, isInProgress}
@@ -142,7 +143,9 @@ let requirementsState = {
         socialBehavLAF: { have: 0 },
         fineArtsLAF: { have: 0 },
         humanitiesLAF: { have: 0 }
-    }
+    },
+    // Flexible keystone tracking
+    keystoneComplete: false
 };
 
 // Initialize requirements state
@@ -156,6 +159,7 @@ function initRequirementsState() {
         plpMajor: 0,
         augsburgExperience: false,
         intentToGraduate: false,
+        hasMPG4: false,
         completedCourses: new Map(),
         placedCourses: new Map(),
         udElectivesPlaced: [],
@@ -213,7 +217,9 @@ function initRequirementsState() {
         // Biopsychology major tracking
         biopsychBioElectives: 0,
         biopsychPsychElectives: 0,
-        biopsychKeystone: 0
+        biopsychKeystone: 0,
+        // Flexible keystone tracking (for non-standard approved keystones)
+        keystoneComplete: false
     };
 }
 
@@ -473,7 +479,7 @@ function getRequirementsStatus() {
             met: areAllCoursesMet(REQUIREMENTS.bioMajor.chemistry)
         },
         precalc: {
-            met: isCourseCompleted('MAT114')
+            met: isCourseCompleted('MAT114') || requirementsState.hasMPG4
         },
         mathStats: {
             met: isAnyCourseMet(REQUIREMENTS.bioMajor.mathStats)
@@ -548,6 +554,9 @@ function updateRequirementsUI() {
 
     // Update course boxes in sidebar (gray out used ones)
     updateCourseBoxStates();
+
+    // Update section status indicators
+    updateSectionStatuses(status);
 }
 
 // Update Gen Ed status indicators
@@ -688,14 +697,206 @@ function updateCounter(elementId, current, target) {
 
 // Update course box states in sidebar
 function updateCourseBoxStates() {
+    // Check if "choose one" requirements are met
+    const mathStatsMet = isAnyCourseMet(REQUIREMENTS.bioMajor.mathStats);
+    const physicsMet = isAnyCourseMet(REQUIREMENTS.bioMajor.physics);
+
     document.querySelectorAll('.requirements-panel .course-box').forEach(box => {
         const courseId = box.dataset.courseId;
         if (courseId && !courseId.startsWith('GENERIC')) {
-            const isUsed = isCourseCompleted(courseId);
+            let isUsed = isCourseCompleted(courseId);
+            // Special case: MAT114 (precalc) is satisfied by MPG4 placement
+            if (courseId === 'MAT114' && requirementsState.hasMPG4) {
+                isUsed = true;
+            }
+            // Special case: MATH placeholder satisfied if any math/stats course completed
+            if (courseId === 'MATH' && mathStatsMet) {
+                isUsed = true;
+            }
+            // Special case: PHYSICS placeholder satisfied if any physics course completed
+            if (courseId === 'PHYSICS' && physicsMet) {
+                isUsed = true;
+            }
             box.classList.toggle('used', isUsed);
             box.draggable = !isUsed;
         }
     });
+}
+
+// Update section status indicators (check/X next to section titles)
+function updateSectionStatuses(status) {
+    // Biology Major sections
+    updateSectionStatusIcon('intro-sequence-status', status.introSequence.met);
+    updateSectionStatusIcon('sophomore-level-status', status.sophomoreLevel.met);
+    updateSectionStatusIcon('chemistry-status', status.chemistry.met);
+
+    // Supporting courses: precalc + mathStats + physics
+    const supportingMet = status.precalc.met && status.mathStats.met && status.physics.met;
+    updateSectionStatusIcon('supporting-status', supportingMet);
+
+    // UD Electives: all three counters must be met
+    const udElectivesMet = status.udElectives.met && status.udLabs.met && status.nonHealth.met;
+    updateSectionStatusIcon('ud-electives-status', udElectivesMet);
+
+    // Keystone: BIO490 OR any course placed in keystone section
+    const keystoneMet = status.keystone.met || requirementsState.keystoneComplete;
+    updateSectionStatusIcon('keystone-status', keystoneMet);
+
+    // Biology Major overall: all sections complete
+    const bioMajorMet = status.introSequence.met &&
+                        status.sophomoreLevel.met &&
+                        status.chemistry.met &&
+                        supportingMet &&
+                        udElectivesMet &&
+                        keystoneMet;
+    updateSectionStatusIcon('bio-major-status', bioMajorMet);
+
+    // Biopsychology Major sections
+    const biopsychRequiredCourses = ['BIO151', 'BIO152', 'BIO354', 'BIO475', 'CHM115', 'CHM116', 'PSY105', 'PSY215', 'PSY315', 'PSY355'];
+    const biopsychRequiredMet = biopsychRequiredCourses.every(c => isCourseCompleted(c));
+    updateSectionStatusIcon('biopsych-required-status', biopsychRequiredMet);
+
+    const biopsychBioElectivesMet = requirementsState.biopsychBioElectives >= 2;
+    updateSectionStatusIcon('biopsych-bio-electives-status', biopsychBioElectivesMet);
+
+    const biopsychPsychElectivesMet = requirementsState.biopsychPsychElectives >= 2;
+    updateSectionStatusIcon('biopsych-psych-electives-status', biopsychPsychElectivesMet);
+
+    // Biopsychology Keystone: standard courses OR any keystone marked complete
+    const biopsychKeystoneMet = requirementsState.biopsychKeystone >= 1 || requirementsState.keystoneComplete;
+    updateSectionStatusIcon('biopsych-keystone-status', biopsychKeystoneMet);
+
+    // Biopsychology Major overall
+    const biopsychMajorMet = biopsychRequiredMet &&
+                             biopsychBioElectivesMet &&
+                             biopsychPsychElectivesMet &&
+                             biopsychKeystoneMet;
+    updateSectionStatusIcon('biopsych-major-status', biopsychMajorMet);
+
+    // General Education status
+    if (requirementsState.useOldRules) {
+        const oldGenEdMet = isOldGenEdComplete();
+        updateSectionStatusIcon('gened-old-status', oldGenEdMet);
+    } else {
+        const newGenEdMet = isNewGenEdComplete();
+        updateSectionStatusIcon('gened-new-status', newGenEdMet);
+    }
+}
+
+// Check if new Gen Ed requirements are complete (all categories)
+function isNewGenEdComplete() {
+    const categories = [
+        'writing', 'math', 'sustWell', 'communication', 'localGlobal',
+        'epsj', 'lab', 'art', 'religion', 'behavioral', 'humanities'
+    ];
+    return categories.every(cat =>
+        requirementsState.genEdCompleted[cat] || requirementsState.genEdPlaced[cat]
+    );
+}
+
+// Check if old Gen Ed requirements are complete
+// Students can waive EITHER:
+// a) Both Modern Language courses, OR
+// b) Two LAF courses from different categories
+function isOldGenEdComplete() {
+    const state = requirementsState.oldGenEdCompleted;
+
+    // Helper to check if a requirement is complete or will be complete (in-progress counts)
+    const isCompleteOrInProgress = (req) => {
+        if (!req) return false;
+        // Complete if status is OK, OR if have >= required (including in-progress courses)
+        return req.complete || (req.have >= (req.required || 1));
+    };
+
+    // Always required: effectiveWriting, wellness, searchMeaning1, searchMeaning2
+    const coreComplete = isCompleteOrInProgress(state.effectiveWriting) &&
+                         isCompleteOrInProgress(state.wellness) &&
+                         isCompleteOrInProgress(state.searchMeaning1) &&
+                         isCompleteOrInProgress(state.searchMeaning2);
+
+    if (!coreComplete) {
+        return false;
+    }
+
+    // LAF categories
+    const lafCategories = ['sciMathLAF', 'socialBehavLAF', 'fineArtsLAF', 'humanitiesLAF'];
+    const lafStatus = lafCategories.map(cat => {
+        let complete = state[cat]?.complete;
+        let have = state[cat]?.have || 0;
+        const required = REQUIREMENTS.oldGenEd[cat]?.required || 2;
+
+        // For biology/biopsychology majors, sciMathLAF is automatically fulfilled by major courses
+        // If not explicitly marked complete but student is a science major, consider it complete
+        if (cat === 'sciMathLAF' && !complete && typeof appState !== 'undefined') {
+            if (appState.majorType === 'biology' || appState.majorType === 'biopsychology') {
+                complete = true;
+                have = 2;
+            }
+        }
+
+        // Consider complete if status is OK OR have >= required (in-progress counts)
+        const effectivelyComplete = complete || (have >= required);
+
+        return {
+            category: cat,
+            complete: effectivelyComplete,
+            have: have,
+            required: required
+        };
+    });
+
+    // Modern Language: complete if status is OK OR have >= 2
+    const modernLangComplete = state.modernLanguage?.complete ||
+                               (state.modernLanguage?.have >= 2);
+
+    // Option A: Waive Modern Language - all LAF must be complete
+    if (!modernLangComplete) {
+        const allLafComplete = lafStatus.every(laf => laf.complete);
+        if (allLafComplete) {
+            return true;
+        }
+    }
+
+    // Option B: Take Modern Language - can waive up to 2 LAF courses from different categories
+    if (modernLangComplete) {
+        // Count how many LAF courses are missing, and from which categories
+        let totalMissing = 0;
+        let categoriesWithMissing = 0;
+
+        lafStatus.forEach(laf => {
+            const missing = laf.required - laf.have;
+            if (missing > 0) {
+                totalMissing += missing;
+                categoriesWithMissing++;
+            }
+        });
+
+        // Can waive up to 2 courses, but not both from the same category
+        // So: max 2 missing total, and if 2 missing they must be from different categories
+        if (totalMissing === 0) {
+            return true;
+        }
+        if (totalMissing <= 2 && categoriesWithMissing >= totalMissing) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// Helper to update a section status icon
+function updateSectionStatusIcon(elementId, isMet) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.classList.remove('check', 'x');
+        if (isMet) {
+            element.classList.add('check');
+            element.textContent = '\u2713'; // Checkmark
+        } else {
+            element.classList.add('x');
+            element.textContent = '\u2717'; // X mark
+        }
+    }
 }
 
 // Set gen ed completion status (new rules)
@@ -731,6 +932,10 @@ function setIntentToGraduate(isComplete) {
     requirementsState.intentToGraduate = isComplete;
 }
 
+function setMPG4(hasMPG4) {
+    requirementsState.hasMPG4 = hasMPG4;
+}
+
 // Set total credits (from audit parsing)
 function setTotalCredits(credits, inProgress = 0) {
     requirementsState.totalCredits = credits;
@@ -741,6 +946,11 @@ function setTotalCredits(credits, inProgress = 0) {
 function setUdCredits(credits, inProgress = 0) {
     requirementsState.udCredits = credits;
     requirementsState.udCreditsInProgress = inProgress;
+}
+
+// Set keystone completion (for non-standard approved keystones)
+function setKeystoneComplete(isComplete) {
+    requirementsState.keystoneComplete = isComplete;
 }
 
 // Export for use in other modules
@@ -761,6 +971,7 @@ if (typeof module !== 'undefined' && module.exports) {
         getUseOldRules,
         setAugsburgExperience,
         setIntentToGraduate,
+        setMPG4,
         setTotalCredits,
         setUdCredits
     };

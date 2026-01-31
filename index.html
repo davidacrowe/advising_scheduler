@@ -8,7 +8,11 @@
 </head>
 <body>
     <header>
-        <h1>Biology Major Course Planner</h1>
+        <h1 id="app-title">Biology Major Course Planner</h1>
+        <div id="validation-error" class="header-error hidden">
+            <span class="error-icon">!</span>
+            <span id="validation-error-message"></span>
+        </div>
         <div class="header-controls">
             <label for="audit-upload" class="upload-btn">Upload Degree Audit</label>
             <input type="file" id="audit-upload" accept=".pdf" hidden>
@@ -225,11 +229,11 @@
 
             <!-- Biology Major Requirements -->
             <section class="req-section bio-major" id="bio-major-section">
-                <h2>Biology Major</h2>
+                <h2><span class="section-status" id="bio-major-status"></span>Biology Major</h2>
 
                 <!-- Introductory Sequence -->
                 <div class="req-subsection">
-                    <h3>Introductory Sequence</h3>
+                    <h3><span class="section-status" id="intro-sequence-status"></span>Introductory Sequence</h3>
                     <div class="course-list" id="intro-courses">
                         <!-- BIO151, BIO152 will be populated here -->
                     </div>
@@ -237,7 +241,7 @@
 
                 <!-- Sophomore Level -->
                 <div class="req-subsection">
-                    <h3>Sophomore Level</h3>
+                    <h3><span class="section-status" id="sophomore-level-status"></span>Sophomore Level</h3>
                     <div class="course-list" id="sophomore-courses">
                         <!-- BIO354, BIO355 will be populated here -->
                     </div>
@@ -245,7 +249,7 @@
 
                 <!-- Chemistry -->
                 <div class="req-subsection">
-                    <h3>Chemistry</h3>
+                    <h3><span class="section-status" id="chemistry-status"></span>Chemistry</h3>
                     <div class="course-list" id="chemistry-courses">
                         <!-- CHM115, CHM116, CHM251 will be populated here -->
                     </div>
@@ -253,7 +257,7 @@
 
                 <!-- Supporting Courses -->
                 <div class="req-subsection">
-                    <h3>Supporting Courses</h3>
+                    <h3><span class="section-status" id="supporting-status"></span>Supporting Courses</h3>
                     <div class="course-list" id="supporting-courses">
                         <!-- MAT114, Math, Physics will be populated here -->
                     </div>
@@ -261,7 +265,7 @@
 
                 <!-- Upper Division Electives -->
                 <div class="req-subsection">
-                    <h3>Upper Division Electives</h3>
+                    <h3><span class="section-status" id="ud-electives-status"></span>Upper Division Electives</h3>
                     <div class="req-counters">
                         <span class="counter" id="ud-elective-count">0/5 UD Electives</span>
                         <span class="counter" id="ud-lab-count">0/4 UD Labs</span>
@@ -275,7 +279,7 @@
 
                 <!-- Keystone -->
                 <div class="req-subsection">
-                    <h3>Keystone</h3>
+                    <h3><span class="section-status" id="keystone-status"></span>Keystone</h3>
                     <div class="course-list" id="keystone-course">
                         <!-- BIO490 will be populated here -->
                     </div>
@@ -284,11 +288,11 @@
 
             <!-- Biopsychology Major Requirements -->
             <section class="req-section biopsych-major hidden" id="biopsych-major-section">
-                <h2>Biopsychology Major</h2>
+                <h2><span class="section-status" id="biopsych-major-status"></span>Biopsychology Major</h2>
 
                 <!-- Required Courses -->
                 <div class="req-subsection">
-                    <h3>Required Courses</h3>
+                    <h3><span class="section-status" id="biopsych-required-status"></span>Required Courses</h3>
                     <div class="course-list" id="biopsych-required-courses">
                         <!-- BIO151, BIO152, BIO354, BIO475, CHM115, CHM116, PSY105, PSY215, PSY315, PSY355 -->
                     </div>
@@ -296,7 +300,7 @@
 
                 <!-- Biology Electives -->
                 <div class="req-subsection">
-                    <h3>Biology Electives</h3>
+                    <h3><span class="section-status" id="biopsych-bio-electives-status"></span>Biology Electives</h3>
                     <div class="req-counters">
                         <span class="counter" id="biopsych-bio-elective-count">0/2 Bio Electives</span>
                     </div>
@@ -307,7 +311,7 @@
 
                 <!-- Psychology Electives -->
                 <div class="req-subsection">
-                    <h3>Psychology Electives</h3>
+                    <h3><span class="section-status" id="biopsych-psych-electives-status"></span>Psychology Electives</h3>
                     <div class="req-counters">
                         <span class="counter" id="biopsych-psych-elective-count">0/2 Psych Electives</span>
                     </div>
@@ -318,7 +322,7 @@
 
                 <!-- Keystone -->
                 <div class="req-subsection">
-                    <h3>Keystone</h3>
+                    <h3><span class="section-status" id="biopsych-keystone-status"></span>Keystone</h3>
                     <div class="req-counters">
                         <span class="counter" id="biopsych-keystone-count">0/1 Keystone</span>
                     </div>
@@ -330,7 +334,7 @@
 
             <!-- General Education (New Rules - 2025+) -->
             <section class="req-section gen-ed gen-ed-new" id="gened-new-section">
-                <h2>General Education</h2>
+                <h2><span class="section-status" id="gened-new-status"></span>General Education</h2>
                 <div class="gened-list" id="gened-courses">
                     <!-- Gen Ed courses will be populated here with status indicators -->
                 </div>
@@ -338,7 +342,7 @@
 
             <!-- General Education (Old Rules - Pre-2025) -->
             <section class="req-section gen-ed gen-ed-old hidden" id="gened-old-section">
-                <h2>General Education (Old Rules)</h2>
+                <h2><span class="section-status" id="gened-old-status"></span>General Education (Old Rules)</h2>
                 <div class="gened-list" id="old-gened-courses">
                     <!-- Old Gen Ed courses will be populated here -->
                 </div>
@@ -404,6 +408,7 @@
     <script src="courses.js"></script>
     <script src="requirements.js"></script>
     <script src="auditParser.js"></script>
+    <script src="validation.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

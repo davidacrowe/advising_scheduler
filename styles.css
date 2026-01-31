@@ -142,6 +142,37 @@ main {
     overflow: hidden;
 }
 
+/* ===== HEADER VALIDATION ERROR ===== */
+.header-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--color-error);
+    color: var(--color-text-inverse);
+    padding: 8px 14px;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 500;
+    max-width: 400px;
+}
+
+.header-error.hidden {
+    display: none;
+}
+
+.header-error .error-icon {
+    width: 20px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
 /* ===== SEMESTER PANEL ===== */
 .semester-panel {
     flex: 0 0 70%;
@@ -442,6 +473,37 @@ main {
     font-weight: 600;
     margin-bottom: var(--space-sm);
     color: var(--color-text-secondary);
+}
+
+/* Section Status Indicators */
+.section-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    font-size: 0.65rem;
+    font-weight: 700;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+.section-status.check {
+    background: var(--color-success);
+    color: var(--color-text-inverse);
+}
+
+.section-status.x {
+    background: var(--color-error);
+    color: var(--color-text-inverse);
+}
+
+/* Larger status for main section headers (h2) */
+.req-section h2 .section-status {
+    width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
 }
 
 /* Credit Summary Items */

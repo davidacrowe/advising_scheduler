@@ -54,11 +54,11 @@ function populateSidebar() {
         });
     }
 
-    // Supporting courses (MAT114, Math, Physics) - exclude biopsych-only courses
+    // Supporting courses (MAT114, Math, Physics) - exclude biopsych-only and hidden courses
     const supportContainer = document.getElementById('supporting-courses');
     if (supportContainer) {
         MATH_PHYSICS_COURSES
-            .filter(course => !course.isBiopsychBioElective)
+            .filter(course => !course.isBiopsychBioElective && !course.hideFromSidebar)
             .forEach(course => {
                 supportContainer.appendChild(createCourseBox(course));
             });
@@ -249,10 +249,22 @@ function createCourseBox(course, showNonHealthMarker = false) {
 
 // Create a course box for placement in the grid
 function createGridCourseBox(course, isCompleted = false, isInProgress = false, grade = null) {
-    // For biology majors, PSY courses should display as yellow (genEd) not dark red
     let modifiedCourse = course;
+
+    // For biology majors, handle PSY courses based on their role
     if (appState.majorType !== 'biopsychology' && course.category === 'psychology') {
-        modifiedCourse = { ...course, color: COLORS.genEd, category: 'genEd' };
+        // PSY215 fulfills the math/stats requirement - display as mathPhysics (red)
+        if (course.id === 'PSY215') {
+            modifiedCourse = {
+                ...course,
+                color: COLORS.mathPhysics,
+                category: 'mathPhysics',
+                nickname: 'Math'
+            };
+        } else {
+            // Other PSY courses display as genEd (yellow) for biology majors
+            modifiedCourse = { ...course, color: COLORS.genEd, category: 'genEd' };
+        }
     }
 
     const box = createCourseBox(modifiedCourse);
@@ -282,6 +294,11 @@ function setupDragAndDrop() {
             e.target.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', e.target.dataset.courseId);
+
+            // Hide any validation error when starting a new drag
+            if (typeof hideValidationError === 'function') {
+                hideValidationError();
+            }
         }
     });
 
@@ -329,6 +346,20 @@ function setupDragAndDrop() {
             slot.classList.remove('drag-over');
 
             if (canAcceptCourse(slot, appState.draggedCourse)) {
+                // Validate course placement before allowing drop
+                const courseId = appState.draggedCourse.dataset.courseId;
+                const semesterEl = slot.closest('.semester');
+                const semesterId = semesterEl ? semesterEl.dataset.semester : null;
+
+                // Validate placement if validation function exists
+                if (semesterId && typeof validateCoursePlacement === 'function') {
+                    const validation = validateCoursePlacement(courseId, semesterId);
+                    if (!validation.valid) {
+                        showValidationError(validation.message);
+                        return; // Don't place the course
+                    }
+                }
+
                 dropCourse(slot, appState.draggedCourse);
             }
         }
@@ -527,6 +558,11 @@ function setupEventListeners() {
 
 // Remove a course from its slot (used by double-click)
 function removeCourseFromSlot(courseBox) {
+    // Hide any validation error
+    if (typeof hideValidationError === 'function') {
+        hideValidationError();
+    }
+
     const slot = courseBox.closest('.slot');
     const courseId = courseBox.dataset.courseId;
     const course = getCourseById(courseId, appState.useOldRules);
@@ -577,6 +613,11 @@ async function handleFileUpload(event) {
 
 // Load parsed audit data into the application
 function loadAuditData(auditData) {
+    // Hide any validation error from previous session
+    if (typeof hideValidationError === 'function') {
+        hideValidationError();
+    }
+
     // Reset state
     initRequirementsState();
     clearGrid();
@@ -592,12 +633,9 @@ function loadAuditData(auditData) {
     // Store which rules to use
     appState.useOldRules = auditData.useOldRules || false;
     setUseOldRules(appState.useOldRules);
-    console.log(`Loading audit with ${appState.useOldRules ? 'OLD' : 'NEW'} Gen Ed rules (Catalog: ${auditData.catalogYear})`);
-
     // Store major type and switch display
     appState.majorType = auditData.majorType || 'biology';
     switchMajorDisplay(appState.majorType);
-    console.log(`Major type: ${appState.majorType}`);
 
     // Show/hide appropriate Gen Ed sections
     switchGenEdDisplay(appState.useOldRules);
@@ -605,6 +643,8 @@ function loadAuditData(auditData) {
     // Set special flags
     setAugsburgExperience(auditData.augsburgExperience || false);
     setIntentToGraduate(auditData.intentToGraduate || false);
+    setMPG4(auditData.hasMPG4 || false);
+    setKeystoneComplete(auditData.keystoneComplete || false);
 
     // Set gen ed completion status based on rules
     if (appState.useOldRules) {
@@ -636,9 +676,6 @@ function loadAuditData(auditData) {
     // Calculate semester mapping
     if (firstAugsburgSemester) {
         calculateSemesterMapping(firstAugsburgSemester);
-        console.log(`Grid starting from first Augsburg semester: ${firstAugsburgSemester}`);
-    } else {
-        console.log('No Augsburg semesters found - grid may not populate correctly');
     }
 
     // Collect transfer courses that occurred before the grid start
@@ -661,7 +698,6 @@ function loadAuditData(auditData) {
                 }
             }
         });
-        console.log(`Found ${priorTransferCourses.length} prior transfer courses`);
     }
 
     // Place completed courses in grid
@@ -681,7 +717,6 @@ function loadAuditData(auditData) {
         if (minorNameEl) {
             minorNameEl.textContent = `(${auditData.minorName})`;
         }
-        console.log(`Minor detected: ${auditData.minorName}`);
     } else {
         if (minorNameEl) {
             minorNameEl.textContent = '';
@@ -689,14 +724,11 @@ function loadAuditData(auditData) {
     }
 
     if (auditData.minorCourses && auditData.minorCourses.length > 0) {
-        console.log(`Placing ${auditData.minorCourses.length} minor courses`);
         auditData.minorCourses.forEach(courseData => {
             // Check if this course is already placed in the grid (not just in courses array)
             const existingInGrid = document.querySelector(`.slot .course-box[data-course-id="${courseData.courseId}"]`);
             if (!existingInGrid) {
                 placeMinorCourseInGrid(courseData, auditData.minorName);
-            } else {
-                console.log(`Minor course ${courseData.courseId} already in grid, skipping`);
             }
         });
     }
@@ -770,13 +802,16 @@ function switchGenEdDisplay(useOldRules) {
 function switchMajorDisplay(majorType) {
     const bioSection = document.getElementById('bio-major-section');
     const biopsychSection = document.getElementById('biopsych-major-section');
+    const appTitle = document.getElementById('app-title');
 
     if (majorType === 'biopsychology') {
         bioSection?.classList.add('hidden');
         biopsychSection?.classList.remove('hidden');
+        if (appTitle) appTitle.textContent = 'Biopsychology Major Course Planner';
     } else {
         bioSection?.classList.remove('hidden');
         biopsychSection?.classList.add('hidden');
+        if (appTitle) appTitle.textContent = 'Biology Major Course Planner';
     }
 }
 
@@ -859,10 +894,15 @@ function placeCourseInGrid(courseData) {
     if (!semesterEl) return false;
 
     // Check if this course is a minor course - if so, let minor placement handle it (as purple)
-    // Exception: if the course is specifically fulfilling a Gen Ed requirement that needs it
+    // Exception: if the course is specifically fulfilling a Gen Ed or Major requirement
     const isMinorCourse = appState.auditData?.minorCourses?.some(mc => mc.courseId === courseId);
 
     if (isMinorCourse) {
+        // Check if this course fulfills a major requirement (mathStats or physics)
+        const mathStatsCourses = ['MAT145', 'MAT163', 'DST164', 'PSY215'];
+        const physicsCourses = ['PHY107', 'PHY116', 'PHY121'];
+        const isNeededForMajor = mathStatsCourses.includes(courseId) || physicsCourses.includes(courseId);
+
         // Check if this course is actually needed for a Gen Ed (appears in genEdStatus courses)
         let isNeededForGenEd = false;
         if (genEdCategory) {
@@ -873,11 +913,9 @@ function placeCourseInGrid(courseData) {
             isNeededForGenEd = genEdStatus?.courses?.some(c => c.courseId === courseId);
         }
 
-        if (!isNeededForGenEd) {
-            console.log(`Skipping placement for minor course ${courseId} - will be placed as purple`);
+        if (!isNeededForGenEd && !isNeededForMajor) {
             return false;
         }
-        console.log(`Minor course ${courseId} also fulfills Gen Ed ${genEdCategory} - placing as Gen Ed`);
     }
 
     // Get course info from our defined courses
@@ -1004,7 +1042,6 @@ function placeMinorCourseInGrid(courseData, minorName) {
         .find(([id, t]) => t === term)?.[0];
 
     if (!semesterId) {
-        console.log(`Minor course ${courseId} term ${term} doesn't fit in grid`);
         return false;
     }
 
@@ -1052,11 +1089,9 @@ function placeMinorCourseInGrid(courseData, minorName) {
         if (credits <= 2) {
             targetSlot.classList.add('has-half');
         }
-        console.log(`Placed minor course ${courseId} in ${semesterId}`);
         return true;
     }
 
-    console.log(`No slot available for minor course ${courseId} in ${semesterId}`);
     return false;
 }
 

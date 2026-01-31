@@ -21,9 +21,6 @@ async function parseAuditPDF(file) {
         const pageHeight = viewport.height;
         const pageWidth = viewport.width;
 
-        if (i === 1) {
-            console.log(`Page 1 dimensions: ${pageWidth.toFixed(1)} x ${pageHeight.toFixed(1)} units`);
-        }
 
         // Extract text content
         const textContent = await page.getTextContent();
@@ -56,23 +53,14 @@ async function parseAuditPDF(file) {
     // Sort horizontal lines by Y position
     allHorizontalLines.sort((a, b) => a.y - b.y);
 
-    console.log(`Total horizontal lines found: ${allHorizontalLines.length}`);
-
     // Filter to get significant section-dividing lines
     const sectionLines = filterSectionLines(allHorizontalLines);
-    console.log(`Found ${sectionLines.length} section-dividing horizontal lines`);
 
     // Group text into lines
     const textLines = groupTextIntoLines(allTextItems);
 
     // Create sections based on horizontal lines
     const sections = createSections(textLines, sectionLines);
-    console.log(`Created ${sections.length} sections`);
-
-    // Debug: show first few sections
-    sections.slice(0, 5).forEach((section, i) => {
-        console.log(`Section ${i}: Y=${section.startY.toFixed(1)}-${section.endY.toFixed(1)}, lines=${section.lines.length}, first line: "${section.lines[0]?.substring(0, 60) || '(empty)'}"`);
-    });
 
     // Build full text with section markers
     let fullText = '';
@@ -233,10 +221,6 @@ function extractHorizontalLines(opList, pageHeight, pageOffset, pageNum = 1) {
         }
     }
 
-    if (pageNum === 1) {
-        console.log(`Page ${pageNum}: Found ${lines.length} horizontal lines (stroked + filled)`);
-    }
-
     return lines;
 }
 
@@ -247,7 +231,6 @@ function filterSectionLines(lines, targetWidth = 535.5, tolerance = 2) {
         line.width >= targetWidth - tolerance && line.width <= targetWidth + tolerance
     );
 
-    console.log(`Lines with width ~${targetWidth}: ${wideLines.length}`);
 
     // Group lines by Y position (within 3 units = same line drawn multiple times)
     const groupedByY = [];
@@ -277,16 +260,8 @@ function filterSectionLines(lines, targetWidth = 535.5, tolerance = 2) {
         groupedByY.push(widest);
     }
 
-    console.log(`After deduplication: ${groupedByY.length} unique lines`);
-
     // Skip the first 2 lines (header decorations, not section dividers)
     const sectionDividers = groupedByY.slice(2);
-
-    // Show only the final section divider lines
-    console.log(`=== SECTION DIVIDER LINES (${sectionDividers.length}) ===`);
-    sectionDividers.forEach((line, i) => {
-        console.log(`  ${i}: y=${line.y.toFixed(1)}, width=${line.width.toFixed(1)}`);
-    });
 
     return sectionDividers;
 }
@@ -379,7 +354,10 @@ function parseAuditText(text, sections = []) {
         udCreditsInProgress: 0,
         minorName: '',        // Name of minor if present
         minorCourses: [],     // Courses in the minor
-        sections: sections    // Store sections for use in parsing
+        sections: sections,   // Store sections for use in parsing
+        hasMPG4: false,       // True if student achieved MPG4 on math placement test
+        keystoneComplete: false,  // True if any keystone course is completed/in-progress
+        keystoneCourse: null      // The course fulfilling keystone (if non-standard)
     };
 
     // Normalize text - replace multiple spaces/newlines with single space
@@ -421,12 +399,8 @@ function parseAuditText(text, sections = []) {
         result.catalogYear = catalogMatch[1];
     }
 
-    // Debug: show what we found
-    console.log('Catalog year extracted:', result.catalogYear);
-
     // Determine which rules to use based on catalog year
     result.useOldRules = usesOldRules(result.catalogYear);
-    console.log(`Catalog year: ${result.catalogYear}, Using old rules: ${result.useOldRules}`);
 
     // Check for Augsburg Experience completion (PDF has "Category OK" format)
     result.augsburgExperience = /Augsburg Experience\s+OK/i.test(normalizedText);
@@ -444,6 +418,19 @@ function parseAuditText(text, sections = []) {
 
     // Parse courses (use original text to preserve line structure, pass sections for accurate boundaries)
     result.courses = parseCourses(text, result.useOldRules, sections);
+
+    // Check for MPG4 math placement (satisfies precalc requirement)
+    // Look for MPG4 in the Grade column after a "Term Course Credits Grade Title" header
+    // Format in audit: AC99 MPL 0.0 MPG4 Placement Test
+    const headerPattern = /Term\s+Course\s+Credits\s+Grade\s+Title/gi;
+    let headerMatch;
+    while ((headerMatch = headerPattern.exec(text)) !== null) {
+        const afterHeader = text.substring(headerMatch.index + headerMatch[0].length, headerMatch.index + headerMatch[0].length + 300);
+        if (/\bAC99\b[\s\S]*?\bMPG4\b/i.test(afterHeader)) {
+            result.hasMPG4 = true;
+            break;
+        }
+    }
 
     // Parse total credits from "128 credits" requirement section
     // Look for "NEEDS: xx.x Credits" and subtract from 128
@@ -467,7 +454,6 @@ function parseAuditText(text, sections = []) {
                                      text.match(/\+\s+128\s+credits/i);
         if (totalCreditsComplete) {
             result.totalCreditsEarned = 128;
-            console.log('Total credits requirement shows + (complete) - setting to 128');
         } else {
             // Fallback: sum from courses
             result.courses.forEach(course => {
@@ -486,26 +472,22 @@ function parseAuditText(text, sections = []) {
     if (udCreditsSection) {
         const needed = parseFloat(udCreditsSection[1]);
         result.udCreditsEarned = 36 - needed;
-        console.log(`UD credits: 36 - ${needed} needed = ${result.udCreditsEarned}`);
     } else {
         // Check if the UD credits requirement shows complete status (+ indicator)
         const udCreditsComplete = text.match(/\+\s+At least 36 of your required 128/i);
         if (udCreditsComplete) {
             result.udCreditsEarned = 36;
-            console.log('UD credits requirement shows + (complete) - setting to 36');
         } else {
             // Check for in-progress status with earned credits shown
             // Pattern: "At least 36..." followed by "Earned: xx.x" or "In-progress: xx.x"
             const udCreditsEarned = text.match(/At least 36 of your required 128[\s\S]*?(?:Earned|Have):\s*([\d.]+)/i);
             if (udCreditsEarned) {
                 result.udCreditsEarned = parseFloat(udCreditsEarned[1]);
-                console.log(`UD credits from Earned/Have: ${result.udCreditsEarned}`);
             }
             // Also try to find in-progress UD credits
             const udCreditsInProgress = text.match(/At least 36 of your required 128[\s\S]*?In-progress:\s*([\d.]+)/i);
             if (udCreditsInProgress) {
                 result.udCreditsInProgress = parseFloat(udCreditsInProgress[1]);
-                console.log(`UD credits in progress: ${result.udCreditsInProgress}`);
             }
         }
     }
@@ -515,7 +497,13 @@ function parseAuditText(text, sections = []) {
     if (minorData) {
         result.minorName = minorData.name;
         result.minorCourses = minorData.courses;
-        console.log(`Minor found: ${result.minorName} with ${result.minorCourses.length} courses`);
+    }
+
+    // Parse keystone completion - look for any course in the keystone/capstone section
+    const keystoneData = parseKeystoneSection(text, sections);
+    if (keystoneData.complete) {
+        result.keystoneComplete = true;
+        result.keystoneCourse = keystoneData.course;
     }
 
     return result;
@@ -535,12 +523,9 @@ function parseMinorSection(text, sections = []) {
             const minorMatch = sectionText.match(/(?:^|\n)(OK|NO|IP)\s+Minor in\s+([^\n]+)/im);
             if (minorMatch) {
                 const minorName = minorMatch[2].trim();
-                console.log(`Found minor section ${i}: "${minorName}"`);
-                console.log('Minor section text:', sectionText.substring(0, 500));
 
                 // Parse courses from this section only
                 const courses = parseCoursesFromSectionText(sectionText);
-                console.log(`Found ${courses.length} courses in minor section`);
 
                 return {
                     name: minorName,
@@ -551,16 +536,13 @@ function parseMinorSection(text, sections = []) {
     }
 
     // Fallback: use text-based detection if sections not available
-    console.log('Sections not available, using text-based minor detection');
     const minorHeaderMatch = text.match(/(?:^|\n)(OK|NO|IP)\s+Minor in\s+([^\n]+)/im);
 
     if (!minorHeaderMatch) {
-        console.log('No minor section found');
         return null;
     }
 
     const minorName = minorHeaderMatch[2].trim();
-    console.log(`Found minor (text-based): "${minorName}"`);
 
     // For fallback, look for next section marker
     const afterMinor = text.substring(minorHeaderMatch.index + minorHeaderMatch[0].length);
@@ -575,6 +557,63 @@ function parseMinorSection(text, sections = []) {
         name: minorName,
         courses: courses.map(c => ({ ...c, isMinor: true }))
     };
+}
+
+// Parse keystone section from audit text
+// Returns { complete: boolean, course: string|null }
+function parseKeystoneSection(text, sections = []) {
+    // Keystone section identifiers (may not have OK/IP status)
+    const keystoneIdentifiers = [
+        /Keystone/i,
+        /Capstone/i,
+        /Senior\s+Seminar/i,
+        /BIO\s*490/i,
+        /PSY\s*400/i
+    ];
+
+    // If sections are available, use them for accurate detection
+    if (sections.length > 0) {
+        for (const section of sections) {
+            const sectionText = section.lines.join('\n');
+
+            // Check if this section is a keystone section
+            const isKeystoneSection = keystoneIdentifiers.some(pattern => pattern.test(sectionText));
+            if (!isKeystoneSection) continue;
+
+            // Look for courses in this section using the header pattern
+            // If there's a "Term Course Credits Grade Title" header with courses after it,
+            // that means a course is counting towards this requirement
+            const courses = parseCoursesFromSectionText(sectionText);
+
+            if (courses.length > 0) {
+                const keystoneCourse = courses[0].courseId;
+                return { complete: true, course: keystoneCourse };
+            }
+
+            // Also check for OK/IP status as backup
+            const statusMatch = sectionText.match(/(?:^|\n)(OK|IP)\s+/m);
+            if (statusMatch && (statusMatch[1] === 'OK' || statusMatch[1] === 'IP')) {
+                return { complete: true, course: null };
+            }
+        }
+    }
+
+    // Fallback: text-based detection - look for keystone header followed by course table
+    const keystoneHeaderPattern = /(?:Keystone|Capstone|Senior\s+Seminar|BIO\s*490|PSY\s*400)[\s\S]*?Term\s+Course\s+Credits\s+Grade\s+Title/i;
+    const headerMatch = text.match(keystoneHeaderPattern);
+
+    if (headerMatch) {
+        const afterHeader = text.substring(headerMatch.index + headerMatch[0].length, headerMatch.index + headerMatch[0].length + 300);
+        const coursePattern = /\b(FA|SP|SU|T1|T2|T3|TU|TF|TS|AC)\d{2}\s+([A-Z]{2,5}\d{1,4}[A-Z]?)\s+(\d+(?:\.\d)?)\s+(A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|P|LP|IP|TB|TA|TC|TD|TW[A-Z]?|CR|STA?|In-P)/i;
+        const courseMatch = afterHeader.match(coursePattern);
+
+        if (courseMatch) {
+            const keystoneCourse = courseMatch[2].toUpperCase();
+            return { complete: true, course: keystoneCourse };
+        }
+    }
+
+    return { complete: false, course: null };
 }
 
 // Parse courses from a section of text
@@ -606,7 +645,6 @@ function parseCoursesFromSectionText(sectionText) {
                 credits,
                 grade: grade === 'IN-P' ? 'IP' : grade
             });
-            console.log(`Section course found: ${courseId} (${term}) ${credits}cr`);
         }
     }
 
@@ -649,7 +687,6 @@ function parseGenEdStatus(text, sections = []) {
 
     // If sections are available, use them for accurate boundaries
     if (sections.length > 0) {
-        console.log('Gen Ed: Using section boundaries from PDF lines');
 
         sectionDefs.forEach(def => {
             const pattern = new RegExp('(OK|NO|IP)\\s+' + def.name, 'im');
@@ -663,7 +700,6 @@ function parseGenEdStatus(text, sections = []) {
                     const statusObj = status[def.category];
                     statusObj.complete = match[1].toUpperCase() === 'OK' || match[1].toUpperCase() === 'IP';
 
-                    console.log(`Gen Ed: Found "${def.category}" in section Y=${section.startY.toFixed(1)}-${section.endY.toFixed(1)}, status=${match[1]}`);
 
                     // Parse courses from this section only
                     statusObj.courses = parseCoursesFromSectionText(sectionText);
@@ -671,18 +707,15 @@ function parseGenEdStatus(text, sections = []) {
                     // Filter out 1-credit lab courses
                     statusObj.courses = statusObj.courses.filter(c => !(c.credits <= 1 && c.courseId.endsWith('L')));
 
-                    console.log(`Gen Ed ${def.category}: complete=${statusObj.complete}, courses=${statusObj.courses.map(c => c.courseId).join(', ')}`);
                     break;  // Found it, move to next category
                 }
             }
         });
 
-        console.log('Gen Ed Status parsed (using sections):', status);
         return status;
     }
 
     // Fallback: use text-based boundary detection if sections not available
-    console.log('Gen Ed: Using text-based boundary detection (fallback)');
 
     // Find all section boundaries (OK/NO/IP followed by section name)
     const sectionBoundaries = [];
@@ -690,7 +723,6 @@ function parseGenEdStatus(text, sections = []) {
         const pattern = new RegExp('(?:^|\\n)(OK|NO|IP)\\s+' + def.name, 'im');
         const match = text.match(pattern);
         if (match) {
-            console.log(`Gen Ed: Found section "${def.category}" at index ${match.index}, status=${match[1]}`);
             sectionBoundaries.push({
                 category: def.category,
                 statusCode: match[1].toUpperCase(),
@@ -699,7 +731,6 @@ function parseGenEdStatus(text, sections = []) {
                 name: def.name
             });
         } else {
-            console.log(`Gen Ed: Section "${def.category}" NOT FOUND with pattern: ${pattern}`);
         }
     });
 
@@ -750,15 +781,12 @@ function parseGenEdStatus(text, sections = []) {
                 }
 
                 coursesFound.push({ term, courseId, credits });
-                console.log(`Gen Ed ${section.category}: found course ${courseId} (${term})`);
             }
         }
 
         statusObj.courses = coursesFound;
-        console.log(`Gen Ed ${section.category}: complete=${statusObj.complete}, courses=${coursesFound.map(c => c.courseId).join(', ')}`);
     });
 
-    console.log('Gen Ed Status parsed:', status);
     return status;
 }
 
@@ -796,7 +824,6 @@ function parseOldGenEdStatus(text, sections = []) {
 
     // If sections are available, use them for accurate boundaries
     if (sections.length > 0) {
-        console.log('Old Gen Ed: Using section boundaries from PDF lines');
 
         sectionDefs.forEach(def => {
             const pattern = new RegExp('(OK|NO|IP)\\s+' + def.name, 'im');
@@ -810,7 +837,6 @@ function parseOldGenEdStatus(text, sections = []) {
                     const statusObj = status[def.category];
                     statusObj.complete = match[1].toUpperCase() === 'OK';
 
-                    console.log(`Old Gen Ed: Found "${def.category}" in section Y=${section.startY.toFixed(1)}-${section.endY.toFixed(1)}, status=${match[1]}`);
 
                     // Parse courses from this section only
                     let coursesFound = parseCoursesFromSectionText(sectionText);
@@ -823,7 +849,6 @@ function parseOldGenEdStatus(text, sections = []) {
                         coursesFound = coursesFound.filter(c => {
                             const prefix = c.courseId.replace(/\d+L?$/, '');
                             if (majorPrefixes.includes(prefix)) {
-                                console.log(`Old Gen Ed ${def.category}: skipping major course ${c.courseId}`);
                                 return false;
                             }
                             return true;
@@ -840,18 +865,15 @@ function parseOldGenEdStatus(text, sections = []) {
                         statusObj.have = Math.min(uniqueCourses.size, statusObj.required);
                     }
 
-                    console.log(`Old Gen Ed ${def.category}: complete=${statusObj.complete}, have=${statusObj.have}, courses=${coursesFound.map(c => c.courseId).join(', ')}`);
                     break;  // Found it, move to next category
                 }
             }
         });
 
-        console.log('Old Gen Ed Status parsed (using sections):', status);
         return status;
     }
 
     // Fallback: use text-based boundary detection if sections not available
-    console.log('Old Gen Ed: Using text-based boundary detection (fallback)');
 
     // Course pattern: Term Course Credits Grade (e.g., "FA24 FLM180 4.0 C+")
     // Valid terms: FA, SP, SU, T1, T2, T3, TU, TF, TS followed by 2 digits
@@ -861,23 +883,15 @@ function parseOldGenEdStatus(text, sections = []) {
     const sectionBoundaries = [];
     sectionDefs.forEach(def => {
         // Try both \n and start-of-string patterns
-        const pattern = new RegExp('(?:^|\\n)(OK|NO)\\s+' + def.name, 'im');
+        const pattern = new RegExp('(?:^|\\n)(OK|NO|IP)\\s+' + def.name, 'im');
         const match = text.match(pattern);
         if (match) {
-            console.log(`Old Gen Ed: Found section "${def.category}" at index ${match.index}, status=${match[1]}`);
             sectionBoundaries.push({
                 category: def.category,
                 isComplete: match[1].toUpperCase() === 'OK',
                 startIndex: match.index,
                 name: def.name
             });
-        } else {
-            console.log(`Old Gen Ed: Section "${def.category}" NOT FOUND with pattern: ${pattern}`);
-            // Debug: show what's in the text around expected location
-            const simpleMatch = text.match(new RegExp(def.name.replace(/[()]/g, '\\$&'), 'i'));
-            if (simpleMatch) {
-                console.log(`  But found "${def.name}" at index ${simpleMatch.index}, context: "${text.substring(Math.max(0, simpleMatch.index - 20), simpleMatch.index + 50)}"`);
-            }
         }
     });
 
@@ -885,7 +899,7 @@ function parseOldGenEdStatus(text, sections = []) {
     sectionBoundaries.sort((a, b) => a.startIndex - b.startIndex);
 
     // Also find where Major section starts (to mark end of Gen Ed sections)
-    const majorMatch = text.match(/\n(?:OK|NO)\s+Major in/i);
+    const majorMatch = text.match(/\n(?:OK|NO|IP)\s+Major in/i);
     const majorIndex = majorMatch ? majorMatch.index : text.length;
 
     // Process each section
@@ -935,13 +949,11 @@ function parseOldGenEdStatus(text, sections = []) {
                 if (section.category === 'sciMathLAF') {
                     const prefix = courseId.replace(/\d+L?$/, '');
                     if (majorPrefixes.includes(prefix)) {
-                        console.log(`Old Gen Ed ${section.category}: skipping major course ${courseId}`);
                         continue;
                     }
                 }
 
                 coursesFound.push({ term, courseId, credits });
-                console.log(`Old Gen Ed ${section.category}: found course ${courseId} (${term})`);
             }
         }
 
@@ -955,10 +967,8 @@ function parseOldGenEdStatus(text, sections = []) {
             statusObj.have = Math.min(uniqueCourses.size, statusObj.required);
         }
 
-        console.log(`Old Gen Ed ${section.category}: complete=${statusObj.complete}, have=${statusObj.have}, courses=${coursesFound.map(c => c.courseId).join(', ')}`);
     });
 
-    console.log('Old Gen Ed Status parsed:', status);
     return status;
 }
 
@@ -1012,7 +1022,6 @@ function parseGenEdCourseMappings(text, sections = []) {
             }
         });
 
-        console.log('Gen Ed course mappings (using sections):', Object.fromEntries(courseToGenEd));
         parseGenEdCourseMappings.completedCategories = genEdCompleted;
         return courseToGenEd;
     }
@@ -1070,12 +1079,10 @@ function parseGenEdCourseMappings(text, sections = []) {
                 if (credits <= 1 && courseId.endsWith('L')) continue;
 
                 courseToGenEd.set(courseId, section.category);
-                console.log(`Gen Ed mapping: ${courseId} -> ${section.category}`);
             }
         }
     });
 
-    console.log('Gen Ed course mappings:', Object.fromEntries(courseToGenEd));
     parseGenEdCourseMappings.completedCategories = genEdCompleted;
 
     return courseToGenEd;
@@ -1107,7 +1114,7 @@ function parseOldGenEdCourseMappings(text, sections = []) {
     // If sections are available, use them for accurate boundaries
     if (sections.length > 0) {
         sectionDefs.forEach(def => {
-            const pattern = new RegExp('(OK|NO)\\s+' + def.name, 'im');
+            const pattern = new RegExp('(OK|NO|IP)\\s+' + def.name, 'im');
 
             for (const section of sections) {
                 const sectionText = section.lines.join('\n');
@@ -1138,7 +1145,6 @@ function parseOldGenEdCourseMappings(text, sections = []) {
             }
         });
 
-        console.log('Old Gen Ed course mappings (using sections):', Object.fromEntries(courseToGenEd));
         parseOldGenEdCourseMappings.completedCategories = genEdCompleted;
         return courseToGenEd;
     }
@@ -1146,7 +1152,7 @@ function parseOldGenEdCourseMappings(text, sections = []) {
     // Fallback: text-based boundary detection
     const sectionBoundaries = [];
     sectionDefs.forEach(def => {
-        const pattern = new RegExp('(?:^|\\n)(OK|NO)\\s+' + def.name, 'im');
+        const pattern = new RegExp('(?:^|\\n)(OK|NO|IP)\\s+' + def.name, 'im');
         const match = text.match(pattern);
         if (match) {
             sectionBoundaries.push({
@@ -1160,7 +1166,7 @@ function parseOldGenEdCourseMappings(text, sections = []) {
     sectionBoundaries.sort((a, b) => a.startIndex - b.startIndex);
 
     // Find Major section start
-    const majorMatch = text.match(/\n(?:OK|NO)\s+Major in/i);
+    const majorMatch = text.match(/\n(?:OK|NO|IP)\s+Major in/i);
     const majorIndex = majorMatch ? majorMatch.index : text.length;
 
     // Process each section
@@ -1206,7 +1212,6 @@ function parseOldGenEdCourseMappings(text, sections = []) {
         }
     });
 
-    console.log('Old Gen Ed course mappings:', Object.fromEntries(courseToGenEd));
     parseOldGenEdCourseMappings.completedCategories = genEdCompleted;
 
     return courseToGenEd;
