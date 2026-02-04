@@ -46,12 +46,6 @@ const COURSE_OFFERINGS = {
 // Course prerequisites
 // type: 'required' = ALL courses needed, 'oneOf' = at least ONE course needed
 const COURSE_PREREQUISITES = {
-    'BIO151': [
-        { type: 'oneOf', courses: ['MAT105', 'MAT106', 'MPL3'] }
-    ],
-    'BIO152': [
-        { type: 'oneOf', courses: ['MAT105', 'MAT106', 'MPL3'] }
-    ],
     'BIO320': [
         { type: 'oneOf', courses: ['BIO253', 'BIO354'] },
         { type: 'required', courses: ['BIO151', 'BIO152'] }

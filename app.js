@@ -395,8 +395,15 @@ function removeCourseFromGrid(courseBox) {
         slot.classList.remove('has-half');
     }
 
-    // Update requirements (unless generic)
-    if (course && !course.replenishes) {
+    // Update requirements
+    if (course && course.replenishes) {
+        // Subtract credits for replenishing courses (use dataset in case credits were customized)
+        const credits = parseInt(courseBox.dataset.credits) || course.credits;
+        requirementsState.totalCredits -= credits;
+        if (course.isUpperDivision) {
+            requirementsState.udCredits -= credits;
+        }
+    } else if (course) {
         removePlacedCourse(courseId);
 
         // Reactivate all matching sidebar courses (in visible sections)
@@ -407,7 +414,11 @@ function removeCourseFromGrid(courseBox) {
 
         // If it's a gen ed course, mark as not placed
         if (course.fulfills && course.category === 'genEd') {
-            setGenEdPlaced(course.fulfills, false);
+            if (appState.useOldRules) {
+                setOldGenEdPlaced(course.fulfills, false);
+            } else {
+                setGenEdPlaced(course.fulfills, false);
+            }
         }
     }
 
@@ -457,10 +468,16 @@ function dropCourse(slot, courseBox) {
     // If dragged from sidebar (not from a slot)
     if (!appState.draggedFromSlot) {
         if (course && course.replenishes) {
-            // Clone the course box for the grid (generic courses)
+            // Clone the course box for the grid (generic/minor courses)
             const newBox = createGridCourseBox(course);
             slot.appendChild(newBox);
             slot.classList.add('has-half');
+
+            // Track credits for replenishing courses
+            requirementsState.totalCredits += course.credits;
+            if (course.isUpperDivision) {
+                requirementsState.udCredits += course.credits;
+            }
         } else {
             // Clone the course for the grid, mark sidebar as placed
             const newBox = createGridCourseBox(course);
@@ -476,7 +493,11 @@ function dropCourse(slot, courseBox) {
 
             // If it's a gen ed course, mark as placed
             if (course && course.fulfills && course.category === 'genEd') {
-                setGenEdPlaced(course.fulfills, true);
+                if (appState.useOldRules) {
+                    setOldGenEdPlaced(course.fulfills, true);
+                } else {
+                    setGenEdPlaced(course.fulfills, true);
+                }
             }
         }
     } else {
@@ -575,8 +596,15 @@ function removeCourseFromSlot(courseBox) {
         slot.classList.remove('has-half');
     }
 
-    // Update requirements (unless generic)
-    if (course && !course.replenishes) {
+    // Update requirements
+    if (course && course.replenishes) {
+        // Subtract credits for replenishing courses (use dataset in case credits were customized)
+        const credits = parseInt(courseBox.dataset.credits) || course.credits;
+        requirementsState.totalCredits -= credits;
+        if (course.isUpperDivision) {
+            requirementsState.udCredits -= credits;
+        }
+    } else if (course) {
         removePlacedCourse(courseId);
 
         // Reactivate all matching sidebar courses (in visible sections)
@@ -587,7 +615,11 @@ function removeCourseFromSlot(courseBox) {
 
         // If it's a gen ed course, mark as not placed
         if (course.fulfills && course.category === 'genEd') {
-            setGenEdPlaced(course.fulfills, false);
+            if (appState.useOldRules) {
+                setOldGenEdPlaced(course.fulfills, false);
+            } else {
+                setGenEdPlaced(course.fulfills, false);
+            }
         }
     }
 
@@ -1281,11 +1313,17 @@ function saveCourseCustomization() {
     const typeSelect = document.getElementById('course-type');
 
     const name = nameInput.value.trim() || 'Custom';
-    const credits = parseInt(creditsSelect.value);
+    const newCredits = parseInt(creditsSelect.value);
     const type = typeSelect.value;
 
+    // Adjust credit totals if credits changed
+    const oldCredits = parseInt(currentEditingCourse.dataset.credits) || 0;
+    if (newCredits !== oldCredits) {
+        requirementsState.totalCredits += (newCredits - oldCredits);
+    }
+
     // Update the course box
-    updateCourseBox(currentEditingCourse, name, credits, type);
+    updateCourseBox(currentEditingCourse, name, newCredits, type);
 
     closeModal();
     updateRequirementsUI();

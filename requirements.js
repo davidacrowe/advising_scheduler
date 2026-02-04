@@ -329,8 +329,8 @@ function addPlacedCourse(courseId, semester) {
 
     requirementsState.placedCourses.set(baseId, { semester });
 
-    // Get course info and update credits
-    const course = getCourseById(baseId);
+    // Get course info and update credits (pass useOldRules so old gen ed courses are found)
+    const course = getCourseById(baseId, requirementsState.useOldRules);
     if (course) {
         requirementsState.totalCredits += course.credits;
 
@@ -376,8 +376,8 @@ function removePlacedCourse(courseId) {
 
     requirementsState.placedCourses.delete(baseId);
 
-    // Get course info and update credits
-    const course = getCourseById(baseId);
+    // Get course info and update credits (pass useOldRules so old gen ed courses are found)
+    const course = getCourseById(baseId, requirementsState.useOldRules);
     if (course) {
         requirementsState.totalCredits -= course.credits;
 
@@ -612,8 +612,12 @@ function updateOldGenEdStatusIndicators() {
 
     Object.entries(categoryToCourseIds).forEach(([category, courseIds]) => {
         const statusObj = requirementsState.oldGenEdCompleted[category];
+        const placedObj = requirementsState.oldGenEdPlaced[category];
         const isComplete = statusObj && statusObj.complete;
-        const haveCount = (statusObj && statusObj.have) || 0;
+        // Combine completed and placed counts
+        const completedCount = (statusObj && statusObj.have) || 0;
+        const placedCount = (placedObj && placedObj.have) || 0;
+        const haveCount = completedCount + placedCount;
 
         // Update status indicator for each course ID in this category
         // If complete, all show green. If partial, first 'haveCount' show green, rest show red
@@ -652,6 +656,17 @@ function updateOldGenEdStatusIndicators() {
 function setGenEdPlaced(category, isPlaced) {
     if (requirementsState.genEdPlaced.hasOwnProperty(category)) {
         requirementsState.genEdPlaced[category] = isPlaced;
+    }
+}
+
+// Mark an old gen ed as placed/unplaced by user
+function setOldGenEdPlaced(category, isPlaced) {
+    if (requirementsState.oldGenEdPlaced.hasOwnProperty(category)) {
+        if (isPlaced) {
+            requirementsState.oldGenEdPlaced[category].have++;
+        } else {
+            requirementsState.oldGenEdPlaced[category].have = Math.max(0, requirementsState.oldGenEdPlaced[category].have - 1);
+        }
     }
 }
 
@@ -800,19 +815,28 @@ function isNewGenEdComplete() {
 // b) Two LAF courses from different categories
 function isOldGenEdComplete() {
     const state = requirementsState.oldGenEdCompleted;
+    const placed = requirementsState.oldGenEdPlaced;
+
+    // Helper to get total have count (completed + placed by user)
+    const totalHave = (category) => {
+        return ((state[category] && state[category].have) || 0) +
+               ((placed[category] && placed[category].have) || 0);
+    };
 
     // Helper to check if a requirement is complete or will be complete (in-progress counts)
-    const isCompleteOrInProgress = (req) => {
+    const isCompleteOrInProgress = (category) => {
+        const req = state[category];
         if (!req) return false;
-        // Complete if status is OK, OR if have >= required (including in-progress courses)
-        return req.complete || (req.have >= (req.required || 1));
+        const have = totalHave(category);
+        // Complete if status is OK, OR if have >= required (including placed courses)
+        return req.complete || (have >= (req.required || 1));
     };
 
     // Always required: effectiveWriting, wellness, searchMeaning1, searchMeaning2
-    const coreComplete = isCompleteOrInProgress(state.effectiveWriting) &&
-                         isCompleteOrInProgress(state.wellness) &&
-                         isCompleteOrInProgress(state.searchMeaning1) &&
-                         isCompleteOrInProgress(state.searchMeaning2);
+    const coreComplete = isCompleteOrInProgress('effectiveWriting') &&
+                         isCompleteOrInProgress('wellness') &&
+                         isCompleteOrInProgress('searchMeaning1') &&
+                         isCompleteOrInProgress('searchMeaning2');
 
     if (!coreComplete) {
         return false;
@@ -822,7 +846,7 @@ function isOldGenEdComplete() {
     const lafCategories = ['sciMathLAF', 'socialBehavLAF', 'fineArtsLAF', 'humanitiesLAF'];
     const lafStatus = lafCategories.map(cat => {
         let complete = state[cat]?.complete;
-        let have = state[cat]?.have || 0;
+        let have = totalHave(cat);
         const required = REQUIREMENTS.oldGenEd[cat]?.required || 2;
 
         // For biology/biopsychology majors, sciMathLAF is automatically fulfilled by major courses
@@ -846,8 +870,9 @@ function isOldGenEdComplete() {
     });
 
     // Modern Language: complete if status is OK OR have >= 2
+    const modernLangHave = totalHave('modernLanguage');
     const modernLangComplete = state.modernLanguage?.complete ||
-                               (state.modernLanguage?.have >= 2);
+                               (modernLangHave >= 2);
 
     // Option A: Waive Modern Language - all LAF must be complete
     if (!modernLangComplete) {
@@ -967,6 +992,7 @@ if (typeof module !== 'undefined' && module.exports) {
         updateRequirementsUI,
         setGenEdComplete,
         setOldGenEdComplete,
+        setOldGenEdPlaced,
         setUseOldRules,
         getUseOldRules,
         setAugsburgExperience,

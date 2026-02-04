@@ -86,7 +86,7 @@ BIO481 Ecology
 5 Semester Credits
 Nickname: Ecology
 Prerequisite(s): 1 of DST164(Introduction to Statistics (with R)), MAT114(Precalculus), MAT145(Calculus I), MAT163(Introductory Statistics), MAT164(Introductory Statistics for STEM), PSY215(Research Methods and Statistics I); BIO151(Introductory Biology), BIO152(Evolution, Ecology and Diversity), CHM116(General Chemistry II)
-Offered: S
+Offered: F
 
 BIO485 Advanced Topics in Biology
 2 Semester Credits
