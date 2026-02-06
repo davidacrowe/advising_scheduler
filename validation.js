@@ -19,7 +19,7 @@ const COURSE_OFFERINGS = {
     'BIO474': { fall: false, spring: true, yearParity: 'even' },
     'BIO475': { fall: false, spring: true, yearParity: null },
     'BIO476': { fall: true, spring: false, yearParity: null },
-    'BIO481': { fall: false, spring: true, yearParity: null },
+    'BIO481': { fall: true, spring: false, yearParity: null },
     'BIO485': { fall: true, spring: true, yearParity: null },
     'BIO486': { fall: false, spring: true, yearParity: null },
     'BIO490': { fall: true, spring: true, yearParity: null },
