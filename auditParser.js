@@ -402,11 +402,15 @@ function parseAuditText(text, sections = []) {
     // Determine which rules to use based on catalog year
     result.useOldRules = usesOldRules(result.catalogYear);
 
-    // Check for Augsburg Experience completion (PDF has "Category OK" format)
-    result.augsburgExperience = /Augsburg Experience\s+OK/i.test(normalizedText);
+    // Check for Augsburg Experience completion
+    // PDF format: "OK/IP Augsburg Experience" (status before name) or non-course waiver "AUGEXP"
+    // IP (in-progress) also counts as satisfied for planning purposes
+    result.augsburgExperience = /(?:OK|IP)\s+Augsburg Experience/i.test(normalizedText) ||
+                                 /AUGEXP\s+Non-Course/i.test(normalizedText);
 
     // Check for Intent to Graduate
-    result.intentToGraduate = /Intent to Graduate[^N]*OK/i.test(normalizedText);
+    // PDF format: "OK Intent to Graduate" (status before name)
+    result.intentToGraduate = /OK\s+Intent to Graduate/i.test(normalizedText);
 
     // Parse Gen Ed status based on rules - pass sections for accurate boundaries
     if (result.useOldRules) {
@@ -499,11 +503,21 @@ function parseAuditText(text, sections = []) {
         result.minorCourses = minorData.courses;
     }
 
-    // Parse keystone completion - look for any course in the keystone/capstone section
+    // Parse keystone completion - first check dedicated sections, then check course list
     const keystoneData = parseKeystoneSection(text, sections);
     if (keystoneData.complete) {
         result.keystoneComplete = true;
         result.keystoneCourse = keystoneData.course;
+    } else {
+        // Fallback: check if any known keystone course appears in the parsed courses
+        const knownKeystoneCourses = ['BIO490', 'SCI490', 'HON490', 'PSY400'];
+        const keystoneCourse = result.courses.find(c =>
+            knownKeystoneCourses.includes(c.courseId) && c.credits > 0
+        );
+        if (keystoneCourse) {
+            result.keystoneComplete = true;
+            result.keystoneCourse = keystoneCourse.courseId;
+        }
     }
 
     return result;
@@ -562,57 +576,61 @@ function parseMinorSection(text, sections = []) {
 // Parse keystone section from audit text
 // Returns { complete: boolean, course: string|null }
 function parseKeystoneSection(text, sections = []) {
-    // Keystone section identifiers (may not have OK/IP status)
-    const keystoneIdentifiers = [
-        /Keystone/i,
-        /Capstone/i,
-        /Senior\s+Seminar/i,
-        /BIO\s*490/i,
-        /PSY\s*400/i
+    // Known keystone course IDs
+    const keystoneCourseIds = ['BIO490', 'SCI490', 'HON490', 'PSY400'];
+
+    // Patterns that identify a dedicated keystone section header
+    const keystoneHeaderPatterns = [
+        /(?:^|\n)\s*(OK|IP|NO)\s+(?:Senior\s+)?Keystone/im,
+        /(?:^|\n)\s*(OK|IP|NO)\s+(?:Senior\s+)?Capstone/im,
     ];
 
-    // If sections are available, use them for accurate detection
+    // Strategy 1: Look for dedicated keystone/capstone sections (e.g. old rules "OK Senior Keystone")
     if (sections.length > 0) {
         for (const section of sections) {
             const sectionText = section.lines.join('\n');
 
-            // Check if this section is a keystone section
-            const isKeystoneSection = keystoneIdentifiers.some(pattern => pattern.test(sectionText));
-            if (!isKeystoneSection) continue;
-
-            // Look for courses in this section using the header pattern
-            // If there's a "Term Course Credits Grade Title" header with courses after it,
-            // that means a course is counting towards this requirement
-            const courses = parseCoursesFromSectionText(sectionText);
-
-            if (courses.length > 0) {
-                const keystoneCourse = courses[0].courseId;
-                return { complete: true, course: keystoneCourse };
+            for (const pattern of keystoneHeaderPatterns) {
+                const match = sectionText.match(pattern);
+                if (match) {
+                    const status = match[1].toUpperCase();
+                    if (status === 'OK' || status === 'IP') {
+                        const courses = parseCoursesFromSectionText(sectionText);
+                        return { complete: true, course: courses.length > 0 ? courses[0].courseId : null };
+                    }
+                    // If NO, keystone section exists but not complete
+                    return { complete: false, course: null };
+                }
             }
+        }
+    }
 
-            // Also check for OK/IP status as backup
-            const statusMatch = sectionText.match(/(?:^|\n)(OK|IP)\s+/m);
-            if (statusMatch && (statusMatch[1] === 'OK' || statusMatch[1] === 'IP')) {
+    // Strategy 2: Text-based fallback for dedicated sections
+    for (const pattern of keystoneHeaderPatterns) {
+        const match = text.match(pattern);
+        if (match) {
+            const status = match[1].toUpperCase();
+            if (status === 'OK' || status === 'IP') {
+                const afterMatch = text.substring(match.index, match.index + 500);
+                const courseHeaderMatch = afterMatch.match(/Term\s+Course\s+Credits\s+Grade\s+Title/i);
+                if (courseHeaderMatch) {
+                    const afterCourseHeader = afterMatch.substring(courseHeaderMatch.index + courseHeaderMatch[0].length);
+                    const coursePattern = /\b(FA|SP|SU|T1|T2|T3|TU|TF|TS|AC)\d{2}\s+([A-Z]{2,5}(?:\d{1,4}[A-Z]?|TRNS|NOEQ|LD|UD))\s+(\d+(?:\.\d)?)\s+(A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|P|LP|IP|TB|TA|TC|TD|TW[A-Z]?|CR|STA?|In-P)/i;
+                    const courseMatch = afterCourseHeader.match(coursePattern);
+                    if (courseMatch) {
+                        return { complete: true, course: courseMatch[2].toUpperCase() };
+                    }
+                }
                 return { complete: true, course: null };
             }
+            return { complete: false, course: null };
         }
     }
 
-    // Fallback: text-based detection - look for keystone header followed by course table
-    const keystoneHeaderPattern = /(?:Keystone|Capstone|Senior\s+Seminar|BIO\s*490|PSY\s*400)[\s\S]*?Term\s+Course\s+Credits\s+Grade\s+Title/i;
-    const headerMatch = text.match(keystoneHeaderPattern);
-
-    if (headerMatch) {
-        const afterHeader = text.substring(headerMatch.index + headerMatch[0].length, headerMatch.index + headerMatch[0].length + 300);
-        const coursePattern = /\b(FA|SP|SU|T1|T2|T3|TU|TF|TS|AC)\d{2}\s+([A-Z]{2,5}\d{1,4}[A-Z]?)\s+(\d+(?:\.\d)?)\s+(A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|P|LP|IP|TB|TA|TC|TD|TW[A-Z]?|CR|STA?|In-P)/i;
-        const courseMatch = afterHeader.match(coursePattern);
-
-        if (courseMatch) {
-            const keystoneCourse = courseMatch[2].toUpperCase();
-            return { complete: true, course: keystoneCourse };
-        }
-    }
-
+    // Strategy 3: No dedicated keystone section found.
+    // This happens with new rules where keystone is a sub-requirement within the Major section.
+    // Don't try to parse it from within the major section (too fragile).
+    // Instead, the caller can check if known keystone courses appear in the parsed courses list.
     return { complete: false, course: null };
 }
 
@@ -630,7 +648,7 @@ function parseCoursesFromSectionText(sectionText) {
         const searchArea = nextHeaderIdx > 0 ? afterHeader.substring(0, nextHeaderIdx) : afterHeader.substring(0, 500);
 
         // Course pattern: Term CourseCode Credits Grade
-        const coursePattern = /\b(FA|SP|SU|T1|T2|T3|TU|TF|TS|AC)\d{2}\s+([A-Z]{2,5}\d{1,4}[A-Z]?)\s+(\d+(?:\.\d)?)\s+(A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|P|LP|IP|TB|TA|TC|TD|TW[A-Z]?|CR|STA?|In-P)/gi;
+        const coursePattern = /\b(FA|SP|SU|T1|T2|T3|TU|TF|TS|AC)\d{2}\s+([A-Z]{2,5}(?:\d{1,4}[A-Z]?|TRNS|NOEQ|LD|UD))\s+(\d+(?:\.\d)?)\s+(A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|P|LP|IP|TB|TA|TC|TD|TW[A-Z]?|CR|STA?|In-P)/gi;
         let courseMatch;
 
         while ((courseMatch = coursePattern.exec(searchArea)) !== null) {
@@ -767,7 +785,7 @@ function parseGenEdStatus(text, sections = []) {
             const nextHeaderIdx = afterHeader.search(/Term\s+Course\s+Credits\s+Grade\s+Title(?:\s+Institution)?(?:\s+Course)?/i);
             const searchArea = nextHeaderIdx > 0 ? afterHeader.substring(0, nextHeaderIdx) : afterHeader.substring(0, 300);
 
-            const coursePattern = /\b(FA|SP|SU|T1|T2|T3|TU|TF|TS|AC)\d{2}\s+([A-Z]{2,5}\d{1,4}[A-Z]?)\s+(\d+(?:\.\d)?)\s+(A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|P|LP|IP|TB|TA|TC|TD|TW[A-Z]?|CR|STA?|In-P)/gi;
+            const coursePattern = /\b(FA|SP|SU|T1|T2|T3|TU|TF|TS|AC)\d{2}\s+([A-Z]{2,5}(?:\d{1,4}[A-Z]?|TRNS|NOEQ|LD|UD))\s+(\d+(?:\.\d)?)\s+(A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|P|LP|IP|TB|TA|TC|TD|TW[A-Z]?|CR|STA?|In-P)/gi;
             let courseMatch;
 
             while ((courseMatch = coursePattern.exec(searchArea)) !== null) {
@@ -877,7 +895,7 @@ function parseOldGenEdStatus(text, sections = []) {
 
     // Course pattern: Term Course Credits Grade (e.g., "FA24 FLM180 4.0 C+")
     // Valid terms: FA, SP, SU, T1, T2, T3, TU, TF, TS followed by 2 digits
-    const coursePattern = /\b(FA|SP|SU|T1|T2|T3|TU|TF|TS)\d{2}\s+([A-Z]{2,5}\d{1,4}[A-Z]?)\s+(\d+(?:\.\d)?)\s+(A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|P|LP|IP|TB|TA|TC|TD|TW[A-Z]?|CR|STA?)/gi;
+    const coursePattern = /\b(FA|SP|SU|T1|T2|T3|TU|TF|TS)\d{2}\s+([A-Z]{2,5}(?:\d{1,4}[A-Z]?|TRNS|NOEQ|LD|UD))\s+(\d+(?:\.\d)?)\s+(A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|P|LP|IP|TB|TA|TC|TD|TW[A-Z]?|CR|STA?)/gi;
 
     // Find all section boundaries (OK/NO followed by section name)
     const sectionBoundaries = [];
@@ -933,7 +951,7 @@ function parseOldGenEdStatus(text, sections = []) {
             const searchArea = nextHeaderIdx > 0 ? afterHeader.substring(0, nextHeaderIdx) : afterHeader.substring(0, 300);
 
             let courseMatch;
-            const localCoursePattern = /\b(FA|SP|SU|T1|T2|T3|TU|TF|TS)\d{2}\s+([A-Z]{2,5}\d{1,4}[A-Z]?)\s+(\d+(?:\.\d)?)\s+(A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|P|LP|IP|TB|TA|TC|TD|TW[A-Z]?|CR|STA?)/gi;
+            const localCoursePattern = /\b(FA|SP|SU|T1|T2|T3|TU|TF|TS)\d{2}\s+([A-Z]{2,5}(?:\d{1,4}[A-Z]?|TRNS|NOEQ|LD|UD))\s+(\d+(?:\.\d)?)\s+(A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|P|LP|IP|TB|TA|TC|TD|TW[A-Z]?|CR|STA?)/gi;
 
             while ((courseMatch = localCoursePattern.exec(searchArea)) !== null) {
                 const term = courseMatch[1].toUpperCase() + courseMatch[0].match(/\d{2}/)[0];
@@ -1068,7 +1086,7 @@ function parseGenEdCourseMappings(text, sections = []) {
             const nextHeaderIdx = afterHeader.search(/Term\s+Course\s+Credits\s+Grade\s+Title(?:\s+Institution)?(?:\s+Course)?/i);
             const searchArea = nextHeaderIdx > 0 ? afterHeader.substring(0, nextHeaderIdx) : afterHeader.substring(0, 300);
 
-            const coursePattern = /\b(FA|SP|SU|T1|T2|T3|TU|TF|TS|AC)\d{2}\s+([A-Z]{2,5}\d{1,4}[A-Z]?)\s+(\d+(?:\.\d)?)\s+(A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|P|LP|IP|TB|TA|TC|TD|TW[A-Z]?|CR|STA?|In-P)/gi;
+            const coursePattern = /\b(FA|SP|SU|T1|T2|T3|TU|TF|TS|AC)\d{2}\s+([A-Z]{2,5}(?:\d{1,4}[A-Z]?|TRNS|NOEQ|LD|UD))\s+(\d+(?:\.\d)?)\s+(A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|P|LP|IP|TB|TA|TC|TD|TW[A-Z]?|CR|STA?|In-P)/gi;
             let courseMatch;
 
             while ((courseMatch = coursePattern.exec(searchArea)) !== null) {
@@ -1191,7 +1209,7 @@ function parseOldGenEdCourseMappings(text, sections = []) {
             const nextHeaderIdx = afterHeader.search(/Term\s+Course\s+Credits\s+Grade\s+Title(?:\s+Institution)?(?:\s+Course)?/i);
             const searchArea = nextHeaderIdx > 0 ? afterHeader.substring(0, nextHeaderIdx) : afterHeader.substring(0, 300);
 
-            const coursePattern = /\b(FA|SP|SU|T1|T2|T3|TU|TF|TS)\d{2}\s+([A-Z]{2,5}\d{1,4}[A-Z]?)\s+(\d+(?:\.\d)?)\s+(A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|P|LP|IP|TB|TA|TC|TD|TW[A-Z]?|CR|STA?)/gi;
+            const coursePattern = /\b(FA|SP|SU|T1|T2|T3|TU|TF|TS)\d{2}\s+([A-Z]{2,5}(?:\d{1,4}[A-Z]?|TRNS|NOEQ|LD|UD))\s+(\d+(?:\.\d)?)\s+(A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|P|LP|IP|TB|TA|TC|TD|TW[A-Z]?|CR|STA?)/gi;
             let courseMatch;
 
             while ((courseMatch = coursePattern.exec(searchArea)) !== null) {
@@ -1233,7 +1251,7 @@ function parseCourses(text, useOldRules = false, sections = []) {
     //   SP25 CHM116 4.0 IP General Chemistry II
     //   TU25 CHM115 3.0 TB General Chemistry I
 
-    const coursePattern = /\b(FA|SP|SU|T1|T2|T3|TU|TF|TS|AC)\d{2}\s+([A-Z]{2,5}\d{1,4}[A-Z]?)\s+(\d+(?:\.\d)?)\s+(A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|P|LP|IP|TB|TA|TC|TD|TW[A-Z]?|L|CR|STA?|MPG\d?|In-P)/gi;
+    const coursePattern = /\b(FA|SP|SU|T1|T2|T3|TU|TF|TS|AC)\d{2}\s+([A-Z]{2,5}(?:\d{1,4}[A-Z]?|TRNS|NOEQ|LD|UD))\s+(\d+(?:\.\d)?)\s+(A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|P|LP|IP|TB|TA|TC|TD|TW[A-Z]?|L|CR|STA?|MPG\d?|In-P)/gi;
 
     let match;
     while ((match = coursePattern.exec(text)) !== null) {

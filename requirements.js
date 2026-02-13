@@ -414,8 +414,19 @@ function removePlacedCourse(courseId) {
 
 // Check if a specific course requirement is met
 function isCourseCompleted(courseId) {
-    return requirementsState.completedCourses.has(courseId) ||
-           requirementsState.placedCourses.has(courseId);
+    if (requirementsState.completedCourses.has(courseId) ||
+        requirementsState.placedCourses.has(courseId)) {
+        return true;
+    }
+    // Check if a placed placeholder course covers this courseId
+    for (const [placedId] of requirementsState.placedCourses) {
+        const course = getCourseById(placedId, requirementsState.useOldRules);
+        if (course && course.isPlaceholder && course.validCourses &&
+            course.validCourses.includes(courseId)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // Check if any course from a list is completed

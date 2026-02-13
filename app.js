@@ -959,8 +959,13 @@ function placeCourseInGrid(courseData) {
     }
 
     if (!course) {
-        // Unknown course and not a gen ed - skip
-        return false;
+        // Create a dynamic elective course for unknown courses so they appear in the grid
+        course = {
+            id: courseId,
+            name: courseId,
+            credits: auditCredits || 4,
+            type: 'elective'
+        };
     }
 
     // Find an available slot
